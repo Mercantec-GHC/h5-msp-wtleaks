@@ -6,16 +6,36 @@ from fastapi.responses import HTMLResponse
 from fastapi import HTTPException
 from jose import jwt
 from datetime import datetime, timedelta
+from passlib.context import CryptContext
 
 SECRET_KEY = "your_secret_key"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
-
+# Function to create JWT access token
 def create_access_token(data: dict):
     to_encode = data.copy()
+    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
 
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
+# Function to verify JWT token
+def verify_token(token: str):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload
+    except:
+        return None
+
+# Password hashing context
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def hash_password(password: str):
+    return pwd_context.hash(password[:72])  # bcrypt has a maximum password length of 72 bytes
+
+def verify_password(plain: str, hashed: str):
+    return pwd_context.verify(plain, hashed)
 
 # Initialize Socket.IO server
 sio = socketio.AsyncServer(
@@ -83,7 +103,8 @@ async def message(sid, data):
         "message": msg,
         "sender": sid,
     }, room=room)        
-
+    
+# Handle disconnections
 @sio.event
 async def disconnect(sid):
     print(f"User disconnected: {sid}")
@@ -102,7 +123,7 @@ def signup(user: user):
     if user.username in users:
         return {"error": "Username already exists"}
     
-    users[user.username] = user.code
+    users[user.username] = hash_password(user.code)
     return {"message": "User created successfully"}
 
 # Login model for login endpoint
@@ -116,25 +137,35 @@ def login(data: login):
     if data.username not in users:
         raise HTTPException(status_code=401, detail="User not found")
     
-    if users[data.username] != data.code:
+    if not verify_password(data.code, users[data.username]):
         raise HTTPException(status_code=401, detail="Incorrect password")
+    
+    token = create_access_token({"sub": data.username})
     
     return {
         "message": "Login successful",
-        "token": data.username
+        "access_token": token,
+        "token_type": "bearer"
     }
 
 # Socket.IO event for handling new connections with authentication
 @sio.event
 async def connect(sid, environ, auth=None):
-    token = None
-
-    if auth:
-        token = auth.get("token")
+    token = auth.get("token") if auth else None
 
     if not token:
-        print("Rejected connection: No token provided")
+        print("No token provided, rejecting connection")
         return False
+    
+    payload = verify_token(token)
+
+    if not payload:
+        print("invalid token, rejecting connection")
+        return False
+    
+    username = payload["sub"]
+
+    await sio.save_session(sid, {"username": username})
 
     print(f"User connected: {sid} with token: {token}")    
 

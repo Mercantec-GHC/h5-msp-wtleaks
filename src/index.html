@@ -9,40 +9,71 @@
 <body>
 <div id="root"></div>
 <script>
+
+// React component to handle WebSocket connection and JWT authentication
 const { useEffect } = React;
 
-fetch("http://127.0.0.1:8000/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-        username: "Kasper",
-        code: "1234"
-    })
-})
-.then(res => res.json())
-.then(data => {
-    const token = data.token;
-    console.log("Login successful, token:", token);
-})
-
+const ran = React.useRef(false);
+// Main App component
 function App() {
   useEffect(() => {
-    const socket = io("http://127.0.0.1:8000", {
-      auth: {
-        token: "Kasper"
-      }
-    });
+    if (ran.current) return;
+    ran.current = true;
+// Function to connect to WebSocket with JWT token
+    function connectSocket(token) {
+      const socket = io("http://127.0.0.1:8000", {
+        auth: {token}
+      });
 
-    socket.on("connect", () => {
-      console.log("Connected:", socket.id);
-    });
+      socket.on("connect", () => {
+        console.log("Connected:", socket.id);
+      });
 
-    return () => socket.disconnect();
+      socket.on("connect_error", (err) => {
+        console.error("Socket error:", err.message);
+      });
+    }
+// Function to handle login and connect to WebSocket
+    async function loginAndConnect(){
+      try {
+      const res = await fetch("http://127.0.0.1:8000/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: "Kasper",
+          code: "1234"
+        })
+      });
+    // Check if login was successful
+    const data = await res.json();
+    // Extract token from response
+    const token = data.access_token;
+    console.log("Received token:", token);
+
+    localStorage.setItem("token", token);
+
+    connectSocket(token);
+    } catch (err) {
+      console.error("login error:", err);
+    }
+  }
+  // Check for existing token in localStorage and connect if available
+  const token = localStorage.getItem("token");
+
+  if (token) {
+    console.log("Using existing token:");
+    connectSocket(token);
+  }
+  else {
+    console.log("No token -> logging in");
+    loginAndConnect();
+  }  
+  
+    
   }, []);
-
   return React.createElement("div", null, "Chat App");
 }
-
+// Render the App component into the root div
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(React.createElement(App));
 </script>
