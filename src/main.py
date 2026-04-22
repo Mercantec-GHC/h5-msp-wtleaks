@@ -7,10 +7,65 @@ from fastapi import HTTPException
 from jose import jwt
 from datetime import datetime, timedelta
 from passlib.context import CryptContext
+from src.database import engine
+from src.database import Sessionlocal
+from src.models import Base
+from fastapi import Depends
+from sqlalchemy.orm import Session
+from src.models import User
+from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
+import time
+from sqlalchemy import text
+
+
+
+fastapi_app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # wait until db is ready
+    for i in range(20):
+        try:
+            # force real connection test
+            with engine.connect() as conn:
+                conn.execute(text("SELECT 1"))
+
+            # create tables AFTER connection is confirmed
+            Base.metadata.create_all(bind=engine)
+
+            print("Database is ready + tables created!")
+            break
+
+        except Exception as e:
+            print(f"DB not ready ({i+1}/20): {e}")
+            time.sleep(2)
+
+    yield
+
+app = FastAPI(lifespan=lifespan)    
+
+fastapi_app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
 
 SECRET_KEY = "your_secret_key"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
+
+
+def get_db():
+    db = Sessionlocal()
+    try:
+        yield db
+    finally:
+        db.close()    
 
 # Function to create JWT access token
 def create_access_token(data: dict):
@@ -43,8 +98,6 @@ sio = socketio.AsyncServer(
     cors_allowed_origins="*",   
 )
 
-# FastAPI app
-fastapi_app = FastAPI()
 
 # Serve the HTML page
 @fastapi_app.get("/", response_class=HTMLResponse)
@@ -54,6 +107,7 @@ def root():
 
 # Manifest for Chrome DevTools
 @fastapi_app.get("/.well-known/appspecific/com.chrome.devtools.json")
+
 def chrome_devtools_manifest():
     return {
         "name": "Chat App",
@@ -119,11 +173,20 @@ class user(BaseModel):
 
 # Signup endpoint
 @fastapi_app.post("/signup")
-def signup(user: user):
-    if user.username in users:
+def signup(user: user, db: Session = Depends(get_db)):
+    existing_user = db.query(User).filter(User.username == user.username).first()
+
+    if existing_user:
         return {"error": "Username already exists"}
     
-    users[user.username] = hash_password(user.code)
+    new_user = User(
+        username=user.username,
+        hashed_code=hash_password(user.code)
+    )
+
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
     return {"message": "User created successfully"}
 
 # Login model for login endpoint
@@ -133,11 +196,13 @@ class login(BaseModel):
 
 # Login endpoint
 @fastapi_app.post("/login")
-def login(data: login):
-    if data.username not in users:
+def login(data: login, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.username == data.username).first()
+
+    if not user:
         raise HTTPException(status_code=401, detail="User not found")
     
-    if not verify_password(data.code, users[data.username]):
+    if not verify_password(data.code, user.hashed_code):
         raise HTTPException(status_code=401, detail="Incorrect password")
     
     token = create_access_token({"sub": data.username})
