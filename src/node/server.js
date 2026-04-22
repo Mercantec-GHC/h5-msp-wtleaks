@@ -10,10 +10,14 @@ class User {
     DisplayName;
     RoomsList;
 
+    ActiveRoomID; // Midlertidig. Kan sikkert gemmes i SessionStorage?
+
     constructor(id, name) {
         this.ID = id;
         this.DisplayName = name;
         this.RoomsList = [];
+
+        this.ActiveRoomID = -1;
     }
 }
 
@@ -106,13 +110,12 @@ io.on("connection", (socket) => {
         TryJoinRoom(socket, roomID);
     });
 
-    socket.on("enterRoom", (roomID) => {
-        EnterRoom(socket, roomID);
+    socket.on("tryEnterRoom", (roomID) => {
+        TryEnterRoom(socket, roomID);
     });
 
-    socket.on("chatmessage", (id, name, message) => {
-        //console.log("incoming message");
-        ReceiveMessage(id, name, message);
+    socket.on("chatMessageRoom", (userID, roomID, message) => {
+        ReceiveMessageInRoom(userID, roomID, message);
     });
 
     socket.on("changeDisplayName", (newName) => {
@@ -125,88 +128,103 @@ io.on("connection", (socket) => {
 });
 
 function AssignUser(socketID) {
-    let newUser = new User(socketID, "Bruger " + String(userCounter));
+    const newUser = new User(socketID, "Bruger " + String(userCounter));
     users.push(newUser);
 }
 
 function SendRoomDiscoveryToSocket(socket) {
     // Alle mulige ting
-    let uindex = users.findIndex(x => x.ID === socket.id);
+    const uindex = users.findIndex(x => x.ID === socket.id);
 
     if (uindex !== -1) {
-        let discoverableRooms = rooms.filter(x => !x.UserList.includes(socket.id));
+        const discoverableRooms = rooms.filter(x => !x.UserList.includes(socket.id));
 
         socket.emit("receiveRooms", discoverableRooms);
     }
 }
 
-function ReceiveMessage(id, name, message) {
-    /*
-    let index = users.findIndex(x => x.ID === id);
+function SendRoomListToSocket(socket) {
+    //console.log("Sending room list");
+    const uindex = users.findIndex(x => x.ID === socket.id);
 
-    if (index !== -1) {
-        //console.log(String(id) + " " + String(message));
+    if (uindex !== -1) {
+        const userRooms = rooms.filter(x => x.UserList.includes(socket.id));
 
-        let newMessage = new ChatMessage(users[index].ID, users[index].DisplayName, message);
-        //console.log(String(newMessage.UserName) + " " + String(newMessage.Message));
-        messages.push(newMessage);
-
-        io.emit("newmessage", newMessage);
+        socket.emit("receiveRoomList", userRooms);
     }
-    */
-
-    let newMessage = new ChatMessage(id, name, message);
-    messages.push(newMessage);
-    io.emit("newmessage", newMessage);
 }
 
 function TryJoinRoom(socket, roomID) {
     //console.log("Trying to add user");
-    let uindex = users.findIndex(x => x.ID === socket.id);
+    const uindex = users.findIndex(x => x.ID === socket.id);
 
     if (uindex !== -1) {
-        let cindex = rooms.findIndex(x => x.ChatID === roomID);
+        const cindex = rooms.findIndex(x => x.ChatID === roomID);
 
         if (cindex !== -1) {
             users[uindex].RoomsList.push(roomID);
             rooms[cindex].UserList.push(socket.id);
 
-            console.log("User added to room");
+            //console.log("User added to room");
 
             socket.emit("redirectToRoom", roomID);
         }
     }
 }
 
-function SendRoomListToSocket(socket) {
-    //console.log("Sending room list");
-    let uindex = users.findIndex(x => x.ID === socket.id);
+function TryEnterRoom(socket, roomID) {
+    const uindex = users.findIndex(x => x.ID === socket.id);
 
     if (uindex !== -1) {
-        let userRooms = rooms.filter(x => x.UserList.includes(socket.id));
+        const user = users[uindex];
 
-        socket.emit("receiveRoomList", userRooms);
-    }
-}
+        if (Number(user.ActiveRoomID) === Number(roomID)) {
+            return;
+        }
 
-function JoinRoom(socket, roomID) {
-    let cindex = rooms.findIndex(x => x.ChatID === roomID);
+        const cindex = rooms.findIndex(x => x.ChatID === roomID);
 
-    if (cindex !== -1) {
-        const room = rooms[cindex];
+        if (cindex !== -1) {
+            const room = rooms[cindex];
 
-        if (room.UserList.includes(socket.id)) {
+            if (room.UserList.includes(socket.id)) {
+                if (user.ActiveRoomID !== -1) {
+                    socket.leave(String(user.ActiveRoomID));
+                    //console.log(socket.id + " left room " + roomID);
+                }
 
+                user.ActiveRoomID = roomID;
+                socket.join(String(roomID));
+
+                //console.log(socket.id + " joined room " + roomID);
+
+                ServeRoom(socket, room);
+            }
         }
     }
 }
 
-function EnterRoom(socket, roomID) {
-    
+function ServeRoom(socket, room) {
+    socket.emit("receiveChatroom", room);
 }
 
+function ReceiveMessageInRoom(userID, roomID, message) {
+    const uindex = users.findIndex(u => u.ID === userID);
+    const cindex = rooms.findIndex(c => c.ChatID === roomID);
+
+    if (uindex !== -1 && cindex !== -1) {
+        const newMessage = new ChatMessage(userID, users[uindex].DisplayName, message);
+        rooms[cindex].MessageList.push(newMessage);
+
+        io.to(String(roomID)).emit("newMessageRoom", newMessage);
+    }
+}
+
+// Ændrer ikke retroaktivt på beskeder. Husk at forbinde bruger id med skærmnavn, og ikke gem navnet i beskeden
+// Kan eventuelt cache/gemme en lille lookup tabel, når brugeren deltager i et chatrum, og så spare på noget data der
+// Rummet gemmer dog allerede på brugere, men de har ikke navne med
 function ChangeUserDisplayName(socket, newName) {
-    let uindex = users.findIndex(x => x.ID === socket.id);
+    const uindex = users.findIndex(x => x.ID === socket.id);
 
     if (uindex !== -1) {
         users[uindex].DisplayName = newName;

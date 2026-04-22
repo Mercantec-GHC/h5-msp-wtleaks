@@ -30,30 +30,18 @@ class ChatMessage {
 
 
 const input = document.getElementById("inputField");
-const table = document.getElementById("table");
+const tableContainer = document.getElementById("chatTableContainer");
+let table = null;
 
 const chatDiv = document.getElementById("chatDiv");
 const settingsDiv = document.getElementById("settingsDiv");
 const chatroomsDiv = document.getElementById("chatroomsDiv");
 
 let currentTab = "";
-
-// Senere, når brugere er knyttet på DB, skal navn og ID findes andre steder
-function SendMessage() {
-    if (input.value) {
-        //console.log("sending message");
-        socket.emit("chatmessage", socket.id, sessionStorage.getItem("username"), input.value);
-        input.value = "";
-    }
-}
+let currentRoomID = -1;
 
 socket.on("SessionStorage", (counter) => {
     InitSessionStorage(counter);
-});
-
-socket.on("setuptable", (messages) => {
-    //console.log("building table");
-    BuildChatTable(messages);
 });
 
 socket.on("newmessage", (message) => {
@@ -69,6 +57,14 @@ socket.on("receiveRoomList", (roomList) => {
     ListRooms(roomList);
 });
 
+socket.on("receiveChatroom", (room) => {
+    ReceiveChatroom(room);
+});
+
+socket.on("newMessageRoom", (message) => {
+    AddNewMessageInRoom(message);
+});
+
 
 // pt er data bare userCounter, så altid Number
 function InitSessionStorage(data) {
@@ -81,36 +77,12 @@ function Entry() {
 
 }
 
-// table skal gerne ikke findes i DOM'en mens dette sker, for at mindske mængden af opdateringer
-function BuildChatTable(messages) {
-    for (let i = 0; i < messages.length; i++) {
-        let tr = document.createElement("tr");
-
-        let name = document.createElement("td");
-        name.innerText = messages[i].UserName;
-        tr.appendChild(name);
-
-        let msg = document.createElement("td");
-        msg.innerText = messages[i].Message;
-        tr.appendChild(msg);
-
-        table.appendChild(tr);
+// Senere, når brugere er knyttet på DB, skal navn og ID findes andre steder
+function SendMessageRoom() {
+    if (input.value) {
+        socket.emit("chatMessageRoom", socket.id, currentRoomID, input.value);
+        input.value = "";
     }
-}
-
-function AddNewMessageToTable(message) {
-    //console.log("kaldt på" + " " + String(socket.id));
-    let tr = document.createElement("tr");
-
-    let name = document.createElement("td");
-    name.innerText = message.UserName;
-    tr.appendChild(name);
-
-    let msg = document.createElement("td");
-    msg.innerText = message.Message;
-    tr.appendChild(msg);
-
-    table.appendChild(tr);
 }
 
 function OnSideBarButtonPressed(button) {
@@ -186,8 +158,8 @@ function TryJoinRoom(roomID) {
     socket.emit("tryJoinRoom", roomID);
 }
 
-function JoinRoom(roomID) {
-
+function TryEnterRoom(roomID) {
+    socket.emit("tryEnterRoom", roomID);
 }
 
 function ListRooms(roomList) {
@@ -201,11 +173,55 @@ function ListRooms(roomList) {
 
         let button = document.createElement("button");
         button.innerText = room.ChatName;
-        button.onclick = function () { socket.emit("enterRoom", room.ChatID) };
+        button.onclick = function () { socket.emit("tryEnterRoom", room.ChatID) };
         roomListing.appendChild(button);
 
         chatList.appendChild(roomListing);
     }
+}
+
+// table skal gerne ikke findes i DOM'en mens dette sker, for at mindske mængden af opdateringer
+function ReceiveChatroom(room) {
+    currentRoomID = room.ChatID;
+
+    const messages = room.MessageList;
+
+    if (tableContainer.children.length !== 0) {
+        tableContainer.removeChild(tableContainer.firstChild);
+    }
+
+    table = document.createElement("table");
+    table.classList.add("ChatLog");
+
+    for (let i = 0; i < messages.length; i++) {
+        let tr = document.createElement("tr");
+
+        let name = document.createElement("td");
+        name.innerText = messages[i].UserName;
+        tr.appendChild(name);
+
+        let msg = document.createElement("td");
+        msg.innerText = messages[i].Message;
+        tr.appendChild(msg);
+
+        table.appendChild(tr);
+    }
+
+    tableContainer.appendChild(table);
+}
+
+function AddNewMessageInRoom(message) {
+    let tr = document.createElement("tr");
+
+    let name = document.createElement("td");
+    name.innerText = message.UserName;
+    tr.appendChild(name);
+
+    let msg = document.createElement("td");
+    msg.innerText = message.Message;
+    tr.appendChild(msg);
+
+    table.appendChild(tr);
 }
 
 function TrySetScreenName() {
