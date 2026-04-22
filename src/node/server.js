@@ -106,9 +106,17 @@ io.on("connection", (socket) => {
         TryJoinRoom(socket, roomID);
     });
 
+    socket.on("enterRoom", (roomID) => {
+        EnterRoom(socket, roomID);
+    });
+
     socket.on("chatmessage", (id, name, message) => {
         //console.log("incoming message");
         ReceiveMessage(id, name, message);
+    });
+
+    socket.on("changeDisplayName", (newName) => {
+        ChangeUserDisplayName(socket, newName);
     });
 
     socket.on("disconnect", () => {
@@ -171,7 +179,7 @@ function TryJoinRoom(socket, roomID) {
 }
 
 function SendRoomListToSocket(socket) {
-    console.log("Sending room list");
+    //console.log("Sending room list");
     let uindex = users.findIndex(x => x.ID === socket.id);
 
     if (uindex !== -1) {
@@ -179,7 +187,30 @@ function SendRoomListToSocket(socket) {
 
         socket.emit("receiveRoomList", userRooms);
     }
+}
+
+function JoinRoom(socket, roomID) {
+    let cindex = rooms.findIndex(x => x.ChatID === roomID);
+
+    if (cindex !== -1) {
+        const room = rooms[cindex];
+
+        if (room.UserList.includes(socket.id)) {
+
+        }
+    }
+}
+
+function EnterRoom(socket, roomID) {
     
+}
+
+function ChangeUserDisplayName(socket, newName) {
+    let uindex = users.findIndex(x => x.ID === socket.id);
+
+    if (uindex !== -1) {
+        users[uindex].DisplayName = newName;
+    }
 }
 
 io.engine.on("connection_error", (err) => {

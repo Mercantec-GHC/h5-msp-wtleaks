@@ -201,10 +201,19 @@ function ListRooms(roomList) {
 
         let button = document.createElement("button");
         button.innerText = room.ChatName;
+        button.onclick = function () { socket.emit("enterRoom", room.ChatID) };
         roomListing.appendChild(button);
 
         chatList.appendChild(roomListing);
     }
+}
+
+function TrySetScreenName() {
+    const input = document.getElementById("displayNameInput");
+
+    const newName = input.value;
+
+    socket.emit("changeDisplayName", newName);
 }
 
 function ClearElementOfChildren(elementID) {
@@ -214,4 +223,3 @@ function ClearElementOfChildren(elementID) {
         element.removeChild(element.lastChild);
     }
 }
-
