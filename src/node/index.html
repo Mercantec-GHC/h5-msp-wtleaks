@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>WTLeaks</title>
+        <link rel="stylesheet" href="style.css">
+        <script src="/socket.io/socket.io.js"></script>
+        <script defer src="/client.js"></script>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    </head>
+    <body>
+        <div id="bigDiv">
+            <div id="topDiv" class="TopBar">
+
+            </div>
+            <div id="mainDiv" class="MainDiv">
+                <div id="sideBarDiv" class="SideBar">
+                    <button onclick="OnSideBarButtonPressed('chat')">
+                        <i class="material-icons">chat</i>
+                    </button>
+                    <button onclick="OnSideBarButtonPressed('rooms')">
+                        <i class="material-icons">diversity_3</i>
+                    </button>
+                    <button onclick="OnSideBarButtonPressed('settings')">
+                        <i class="material-icons">settings</i>
+                    </button>
+                </div>
+
+                <div id="contentDiv" class="ContentDiv">
+
+                    <div id="chatDiv" class="ChatDiv Hidden">
+                        <div id="chatList" class="ChatList">
+
+                        </div>
+                        <div id="chatWindow" class="ChatWindow">
+
+                        </div>
+                        <div>
+                            <table id="table" class="ChatLog"></table>
+                        </div>
+                        <div id="inputDiv">
+                            <input id="inputField" type="text">
+                            <button onclick="SendMessage()">Send</button>
+                        </div>
+                    </div>
+
+                    <div id="chatroomsDiv" class="ChatroomsWindow">
+                        <div id="crTop">
+
+                        </div>
+                        <div id="roomsGrid" class="RoomsGrid">
+
+                        </div>
+                    </div>
+
+                    <div id="settingsDiv" class="SettingsWindow Hidden">
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>

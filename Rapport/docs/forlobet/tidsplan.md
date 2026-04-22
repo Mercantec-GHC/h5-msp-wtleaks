@@ -45,7 +45,7 @@ gantt
     axisFormat  %d/%m
 
     section Uge 1
-    Casevalg + problemformulering      :active, u1a, 2026-04-13, 5d
+    Casevalg + problemformulering      :active, u1a, 2026-04-20, 5d
     Godkendelse (senest slut uge 1)    :crit, milestone, godk, after u1a, 0d
 
     section Uge 2-4
