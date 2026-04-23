@@ -27,6 +27,8 @@ class Chatroom {
     UserList;
     ActiveUserList;
     MessageList;
+    PasswordProtected;
+    //Hidden    ; Faktor på DB, ikke så meget her
 
     constructor(id, name) {
         this.ChatID = id;
@@ -34,6 +36,7 @@ class Chatroom {
         this.UserList = [];
         this.ActiveUserList = [];
         this.MessageList = [];
+        this.PasswordProtected = false;
     }
 }
 
@@ -41,6 +44,7 @@ class ChatMessage {
     UserID;
     UserName; // temp
     Message;
+    // Timestamp
 
     constructor(id, name, message) {
         this.UserID = id;
@@ -71,6 +75,7 @@ let rooms = [
 ]
 
 let userCounter = 0;
+let chatroomCounter = 3;
 
 let users = [];
 let messages = [];
@@ -88,6 +93,8 @@ app.get("/style.css", (req, res) => {
     res.sendFile(__dirname + "/style.css");
 });
 
+
+// ========== Client management ==========
 
 io.on("connection", (socket) => {
     //console.log("user connected");
@@ -107,15 +114,19 @@ io.on("connection", (socket) => {
     });
 
     socket.on("tryJoinRoom", (roomID) => {
-        TryJoinRoom(socket, roomID);
+        OnSocketTryJoinChatroom(socket, roomID);
     });
 
     socket.on("tryEnterRoom", (roomID) => {
-        TryEnterRoom(socket, roomID);
+        OnSocketTryEnterChatroom(socket, roomID);
+    });
+
+    socket.on("tryCreatePublicChatroom", (chatroomName) => {
+        OnSocketTryCreatePublicChatroom(socket, chatroomName);
     });
 
     socket.on("chatMessageRoom", (userID, roomID, message) => {
-        ReceiveMessageInRoom(userID, roomID, message);
+        OnNewMessageInChatroom(userID, roomID, message);
     });
 
     socket.on("changeDisplayName", (newName) => {
@@ -127,21 +138,28 @@ io.on("connection", (socket) => {
     });
 });
 
+
 function AssignUser(socketID) {
     const newUser = new User(socketID, "Bruger " + String(userCounter));
     users.push(newUser);
 }
 
-function SendRoomDiscoveryToSocket(socket) {
-    // Alle mulige ting
+
+// ========== Account ==========
+
+// Ændrer ikke retroaktivt på beskeder. Husk at forbinde bruger id med skærmnavn, og ikke gem navnet i beskeden
+// Kan eventuelt cache/gemme en lille lookup tabel, når brugeren deltager i et chatrum, og så spare på noget data der
+// Rummet gemmer dog allerede på brugere, men de har ikke navne med
+function ChangeUserDisplayName(socket, newName) {
     const uindex = users.findIndex(x => x.ID === socket.id);
 
     if (uindex !== -1) {
-        const discoverableRooms = rooms.filter(x => !x.UserList.includes(socket.id));
-
-        socket.emit("receiveRooms", discoverableRooms);
+        users[uindex].DisplayName = newName;
     }
 }
+
+
+// ========== Chatroom ==========
 
 function SendRoomListToSocket(socket) {
     //console.log("Sending room list");
@@ -154,25 +172,7 @@ function SendRoomListToSocket(socket) {
     }
 }
 
-function TryJoinRoom(socket, roomID) {
-    //console.log("Trying to add user");
-    const uindex = users.findIndex(x => x.ID === socket.id);
-
-    if (uindex !== -1) {
-        const cindex = rooms.findIndex(x => x.ChatID === roomID);
-
-        if (cindex !== -1) {
-            users[uindex].RoomsList.push(roomID);
-            rooms[cindex].UserList.push(socket.id);
-
-            //console.log("User added to room");
-
-            socket.emit("redirectToRoom", roomID);
-        }
-    }
-}
-
-function TryEnterRoom(socket, roomID) {
+function OnSocketTryEnterChatroom(socket, roomID) {
     const uindex = users.findIndex(x => x.ID === socket.id);
 
     if (uindex !== -1) {
@@ -198,17 +198,57 @@ function TryEnterRoom(socket, roomID) {
 
                 //console.log(socket.id + " joined room " + roomID);
 
-                ServeRoom(socket, room);
+                ServeChatroomToSocket(socket, room);
             }
         }
     }
 }
 
-function ServeRoom(socket, room) {
+function ServeChatroomToSocket(socket, room) {
     socket.emit("receiveChatroom", room);
 }
 
-function ReceiveMessageInRoom(userID, roomID, message) {
+
+// ========== Discovery ==========
+
+function SendRoomDiscoveryToSocket(socket) {
+    // Alle mulige ting
+    const uindex = users.findIndex(x => x.ID === socket.id);
+
+    if (uindex !== -1) {
+        const discoverableRooms = rooms.filter(x => !x.UserList.includes(socket.id));
+
+        socket.emit("receiveRooms", discoverableRooms);
+    }
+}
+
+function OnSocketTryJoinChatroom(socket, roomID) {
+    //console.log("Trying to add user");
+    const uindex = users.findIndex(x => x.ID === socket.id);
+
+    if (uindex !== -1) {
+        const cindex = rooms.findIndex(x => x.ChatID === roomID);
+
+        if (cindex !== -1) {
+            const user = users[uindex];
+            const chatroom = rooms[cindex];
+
+            SocketJoinChatroom(socket, user, chatroom);
+        }
+    }
+}
+
+function SocketJoinChatroom(socket, user, chatroom) {
+    user.RoomsList.push(chatroom.ChatID);
+    chatroom.UserList.push(user.ID);
+    
+    socket.emit("redirectToRoom", chatroom.ChatID);
+}
+
+
+// ========== Messages ==========
+
+function OnNewMessageInChatroom(userID, roomID, message) {
     const uindex = users.findIndex(u => u.ID === userID);
     const cindex = rooms.findIndex(c => c.ChatID === roomID);
 
@@ -220,22 +260,30 @@ function ReceiveMessageInRoom(userID, roomID, message) {
     }
 }
 
-// Ændrer ikke retroaktivt på beskeder. Husk at forbinde bruger id med skærmnavn, og ikke gem navnet i beskeden
-// Kan eventuelt cache/gemme en lille lookup tabel, når brugeren deltager i et chatrum, og så spare på noget data der
-// Rummet gemmer dog allerede på brugere, men de har ikke navne med
-function ChangeUserDisplayName(socket, newName) {
-    const uindex = users.findIndex(x => x.ID === socket.id);
+
+// ========== Creating chatrooms ==========
+
+function OnSocketTryCreatePublicChatroom(socket, chatroomName) {
+    const uindex = users.findIndex(u => u.ID === socket.id);
 
     if (uindex !== -1) {
-        users[uindex].DisplayName = newName;
+        const user = users[uindex];
+
+        const newRoom = new Chatroom(chatroomCounter++, String(chatroomName));
+        rooms.push(newRoom);
+
+        SocketJoinChatroom(socket, user, newRoom);
     }
 }
 
+
+// ========== MISC ==========
+
 io.engine.on("connection_error", (err) => {
-  console.log(err.req);      // the request object
-  console.log(err.code);     // the error code, for example 1
-  console.log(err.message);  // the error message, for example "Session ID unknown"
-  console.log(err.context);  // some additional error context
+    console.log(err.req);      // the request object
+    console.log(err.code);     // the error code, for example 1
+    console.log(err.message);  // the error message, for example "Session ID unknown"
+    console.log(err.context);  // some additional error context
 });
 
 httpServer.listen(port);

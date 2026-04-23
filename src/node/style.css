@@ -98,7 +98,47 @@ body {
     height: 100%;
 }
 
-.RoomsGrid {
+
+.DiscoveryDiv {
+    display: flex;
+    flex-direction: column;
+}
+
+.DiscoveryTop {
+    text-align: center;
+}
+
+.DiscoveryCreateContainer {
+    display: flex;
+    flex-direction: column;
+}
+
+.DiscoveryCreateForm {
+    display: flex;
+    flex-direction: row;
+}
+
+.DiscoveryFormText {
+    display: flex;
+    flex-direction: column;
+}
+
+.DiscoveryFormText div {
+    display: flex;
+    flex-direction: row;
+}
+
+.DiscoveryFormCheck {
+    display: flex;
+    flex-direction: column;
+}
+
+.DiscoveryFormCheck div {
+    display: flex;
+    flex-direction: row;
+}
+
+.DiscoveryGrid {
     margin: 20px;
 
     display: grid;
@@ -107,7 +147,7 @@ body {
     gap: 16px;
 }
 
-.ChatroomShowcaseBox {
+.DiscoveryShowcaseBox {
     width: 100%;
     display: flex;
     flex-direction: column;

@@ -14,13 +14,13 @@
             </div>
             <div id="mainDiv" class="MainDiv">
                 <div id="sideBarDiv" class="SideBar">
-                    <button onclick="OnSideBarButtonPressed('chat')">
+                    <button onclick="ChangeActiveWindow('chat')">
                         <i class="material-icons">chat</i>
                     </button>
-                    <button onclick="OnSideBarButtonPressed('rooms')">
+                    <button onclick="ChangeActiveWindow('rooms')">
                         <i class="material-icons">diversity_3</i>
                     </button>
-                    <button onclick="OnSideBarButtonPressed('settings')">
+                    <button onclick="ChangeActiveWindow('settings')">
                         <i class="material-icons">settings</i>
                     </button>
                 </div>
@@ -35,23 +35,44 @@
                         <div id="chatTableContainer"></div>
                         <div id="inputDiv">
                             <input id="inputField" type="text">
-                            <button onclick="SendMessageRoom()">Send</button>
+                            <button onclick="SendMessageInChatroom()">Send</button>
                         </div>
                     </div>
 
-                    <div id="chatroomsDiv" class="ChatroomsWindow">
-                        <div id="crTop">
-
+                    <div id="discoveryDiv" class="DiscoveryWindow Hidden">
+                        <div id="discoveryTop">
+                            <span>Her finder du offentlige chatrum. Du kan også oprette dine egne!</span>
                         </div>
-                        <div id="roomsGrid" class="RoomsGrid">
-
+                        <div id="discoveryCreateContainer" class="DiscoveryCreateContainer">
+                            <span>Opret nyt rum</span>
+                            <div class="DiscoveryCreateForm">
+                                <div class="DiscoveryFormText">
+                                    <div>
+                                        <label for="createChatroomName">Navn: </label>
+                                        <input id="createChatroomName" type="text">
+                                    </div>
+                                    <div>
+                                        <label for="createChatroomPassword">Adgangskode: </label>
+                                        <input id="createChatroomPassword" type="text" disabled>
+                                        <input id="createChatroomPasswordToggle" type="checkbox" switch onchange="ToggleFormPassword()">
+                                    </div>
+                                </div>
+                                <div class="DiscoveryFormCheck">
+                                    <div>
+                                        <label for="createChatroomPrivateToggle">Privat rum? </label>
+                                        <input id="createChatroomPrivateToggle" type="checkbox" switch>
+                                    </div>
+                                </div>
+                            </div>
+                            <button onclick="TryCreatePublicChatroom()">Opret nyt rum</button>
                         </div>
+                        <div id="discoveryGrid" class="DiscoveryGrid"></div>
                     </div>
 
                     <div id="settingsDiv" class="SettingsWindow Hidden">
                         <div>
                             <input type="text" id="displayNameInput">
-                            <button onclick="TrySetScreenName()">Opdater</button>
+                            <button onclick="TryChangeDisplayName()">Opdater</button>
                         </div>
                     </div>
                 </div>

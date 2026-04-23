@@ -6,6 +6,7 @@ class Chatroom {
     UserList;
     ActiveUserList;
     MessageList;
+    PasswordProtected;
 
     constructor(id, name) {
         this.ChatID = id;
@@ -13,6 +14,7 @@ class Chatroom {
         this.UserList = [];
         this.ActiveUserList = [];
         this.MessageList = [];
+        this.PasswordProtected = false;
     }
 }
 
@@ -20,6 +22,7 @@ class ChatMessage {
     UserID;
     UserName; // temp
     Message;
+    //Timestamp;
 
     constructor(id, name, message) {
         this.UserID = id;
@@ -34,8 +37,10 @@ const tableContainer = document.getElementById("chatTableContainer");
 let table = null;
 
 const chatDiv = document.getElementById("chatDiv");
+const discoveryDiv = document.getElementById("discoveryDiv");
 const settingsDiv = document.getElementById("settingsDiv");
-const chatroomsDiv = document.getElementById("chatroomsDiv");
+
+const chatroomFormPasswordToggle = document.getElementById("createChatroomPasswordToggle");
 
 let currentTab = "";
 let currentRoomID = -1;
@@ -44,27 +49,28 @@ socket.on("SessionStorage", (counter) => {
     InitSessionStorage(counter);
 });
 
-socket.on("newmessage", (message) => {
-    //console.log("new message received");
-    AddNewMessageToTable(message);
-});
-
 socket.on("receiveRooms", (rooms) => {
-    PresentRooms(rooms);
+    OnReceiveDiscovery(rooms);
 });
 
 socket.on("receiveRoomList", (roomList) => {
-    ListRooms(roomList);
+    OnReceiveChatroomList(roomList);
 });
 
 socket.on("receiveChatroom", (room) => {
-    ReceiveChatroom(room);
+    OnReceiveChatroom(room);
 });
 
 socket.on("newMessageRoom", (message) => {
-    AddNewMessageInRoom(message);
+    OnNewMessageInChatroom(message);
 });
 
+socket.on("redirectToRoom", (roomID) => {
+    RedirectToChatroom(roomID);
+});
+
+
+// ========== Initialisation ==========
 
 // pt er data bare userCounter, så altid Number
 function InitSessionStorage(data) {
@@ -77,93 +83,22 @@ function Entry() {
 
 }
 
-// Senere, når brugere er knyttet på DB, skal navn og ID findes andre steder
-function SendMessageRoom() {
-    if (input.value) {
-        socket.emit("chatMessageRoom", socket.id, currentRoomID, input.value);
-        input.value = "";
-    }
+
+// ========== Account ==========
+
+function TryChangeDisplayName() {
+    const input = document.getElementById("displayNameInput");
+    const newName = input.value;
+
+    socket.emit("changeDisplayName", newName);
 }
 
-function OnSideBarButtonPressed(button) {
-    // Åbner ikke den samme menu igen
-    if (String(button) === String(currentTab)) {
-        return;
-    }
 
-    switch (button) {
-        case "chat":
-            chatroomsDiv.classList.add("Hidden");
-            settingsDiv.classList.add("Hidden");
-            chatDiv.classList.remove("Hidden");
-            socket.emit("getRoomList");
-            break;
+// ========== Chatroom ==========
 
-        case "rooms":
-            chatDiv.classList.add("Hidden");
-            settingsDiv.classList.add("Hidden");
-            chatroomsDiv.classList.remove("Hidden");
-            socket.emit("getRooms");
-            break;
-
-        case "settings":
-            chatDiv.classList.add("Hidden");
-            chatroomsDiv.classList.add("Hidden");
-            settingsDiv.classList.remove("Hidden");
-            break;
-    
-        default:
-            console.log("a");
-            break;
-    }
-
-    // Hvis den gamle menu var rooms, så fjern elementerne
-    if (String(currentTab) === "rooms") {
-        ClearRooms();
-    }
-    else if (String(currentTab) === "chat") {
-        ClearElementOfChildren("chatList");
-    }
-
-    currentTab = String(button);
-}
-
-function PresentRooms(rooms) {
-    for (let i = 0; i < rooms.length; i++) {
-        let box = document.createElement("div");
-        box.classList.add("ChatroomShowcaseBox");
-        
-        let name = document.createElement("span");
-        name.innerText = String(rooms[i].ChatName);
-        box.appendChild(name);
-
-        let button = document.createElement("button");
-        button.innerText = "Deltag";
-        button.onclick = function() { TryJoinRoom(rooms[i].ChatID) };
-        box.appendChild(button);
-
-        roomsGrid.appendChild(box);
-    }
-}
-
-function ClearRooms() {
-    const roomsGrid = document.getElementById("roomsGrid");
-
-    while (roomsGrid.firstChild) {
-        roomsGrid.removeChild(roomsGrid.lastChild);
-    }
-}
-
-function TryJoinRoom(roomID) {
-    socket.emit("tryJoinRoom", roomID);
-}
-
-function TryEnterRoom(roomID) {
-    socket.emit("tryEnterRoom", roomID);
-}
-
-function ListRooms(roomList) {
-    console.log("Listing " + roomList.length + " rooms");
+// Listen af chatrum på siden
+function OnReceiveChatroomList(roomList) {
+    //console.log("Listing " + roomList.length + " rooms");
     const chatList = document.getElementById("chatList");
 
     for (let i = 0; i < roomList.length; i++) {
@@ -180,8 +115,14 @@ function ListRooms(roomList) {
     }
 }
 
+function RedirectToChatroom(roomID) {
+    ChangeActiveWindow("chat");
+    socket.emit("tryEnterRoom", roomID);
+}
+
 // table skal gerne ikke findes i DOM'en mens dette sker, for at mindske mængden af opdateringer
-function ReceiveChatroom(room) {
+// Selve chatrummet med beskeder, brugere, osv
+function OnReceiveChatroom(room) {
     currentRoomID = room.ChatID;
 
     const messages = room.MessageList;
@@ -210,7 +151,18 @@ function ReceiveChatroom(room) {
     tableContainer.appendChild(table);
 }
 
-function AddNewMessageInRoom(message) {
+
+// ========== Messages ==========
+
+// Senere, når brugere er knyttet på DB, skal navn og ID findes andre steder
+function SendMessageInChatroom() {
+    if (input.value) {
+        socket.emit("chatMessageRoom", socket.id, currentRoomID, input.value);
+        input.value = "";
+    }
+}
+
+function OnNewMessageInChatroom(message) {
     let tr = document.createElement("tr");
 
     let name = document.createElement("td");
@@ -224,12 +176,117 @@ function AddNewMessageInRoom(message) {
     table.appendChild(tr);
 }
 
-function TrySetScreenName() {
-    const input = document.getElementById("displayNameInput");
 
-    const newName = input.value;
+// ========== Discovery ==========
 
-    socket.emit("changeDisplayName", newName);
+function OnReceiveDiscovery(rooms) {
+    for (let i = 0; i < rooms.length; i++) {
+        let box = document.createElement("div");
+        box.classList.add("DiscoveryShowcaseBox");
+        
+        let name = document.createElement("span");
+        name.innerText = String(rooms[i].ChatName);
+        box.appendChild(name);
+
+        let button = document.createElement("button");
+        button.innerText = "Deltag";
+        button.onclick = function() { TryJoinChatroom(rooms[i].ChatID) };
+        box.appendChild(button);
+
+        discoveryGrid.appendChild(box);
+    }
+}
+
+function TryJoinChatroom(roomID) {
+    socket.emit("tryJoinRoom", roomID);
+}
+
+
+// ========== Creating chatrooms ==========
+
+function ToggleFormPassword() {
+    const passwordField = document.getElementById("createChatroomPassword");
+    
+    if (chatroomFormPasswordToggle.checked) {
+        passwordField.removeAttribute("disabled");
+    }
+    else {
+        passwordField.setAttribute("disabled", "");
+    }
+}
+
+function TryCreatePublicChatroom() {
+    const nameField = document.getElementById("createChatroomName");
+    const passwordField = document.getElementById("createChatroomPassword");
+    const privateCheck = document.getElementById("createChatroomPrivateToggle");
+
+    const roomName = nameField.value;
+    let roomPassword = "";
+    let roomIsPrivate = false;
+        
+    if (chatroomFormPasswordToggle.checked) {
+        roomPassword = passwordField.value;
+    }
+
+    if (privateCheck.checked) {
+        roomIsPrivate = true;
+    }
+
+    socket.emit("tryCreatePublicChatroom", roomName);
+}
+
+
+// ========== Sidebar / GUI ==========
+
+function ChangeActiveWindow(windowName) {
+    // Åbner ikke den samme menu igen
+    if (String(windowName) === String(currentTab)) {
+        return;
+    }
+
+    switch (windowName) {
+        case "chat":
+            discoveryDiv.classList.add("Hidden");
+            settingsDiv.classList.add("Hidden");
+            chatDiv.classList.remove("Hidden");
+            socket.emit("getRoomList");
+            break;
+
+        case "rooms":
+            chatDiv.classList.add("Hidden");
+            settingsDiv.classList.add("Hidden");
+            discoveryDiv.classList.remove("Hidden");
+            socket.emit("getRooms");
+            break;
+
+        case "settings":
+            chatDiv.classList.add("Hidden");
+            discoveryDiv.classList.add("Hidden");
+            settingsDiv.classList.remove("Hidden");
+            break;
+    
+        default:
+            console.log("a");
+            break;
+    }
+
+    // Hvis den gamle menu var rooms, så fjern elementerne
+    if (String(currentTab) === "rooms") {
+        ClearRooms();
+    }
+    else if (String(currentTab) === "chat") {
+        ClearElementOfChildren("chatList");
+    }
+
+    currentTab = String(windowName);
+}
+
+function ClearRooms() {
+    const discoveryGrid = document.getElementById("discoveryGrid");
+
+    while (discoveryGrid.firstChild) {
+        discoveryGrid.removeChild(discoveryGrid.lastChild);
+    }
 }
 
 function ClearElementOfChildren(elementID) {
