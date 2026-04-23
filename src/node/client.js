@@ -33,8 +33,8 @@ class ChatMessage {
 
 
 const input = document.getElementById("inputField");
-const tableContainer = document.getElementById("chatTableContainer");
-let table = null;
+const chatLogContainer = document.getElementById("chatLogContainer");
+let chatLog = null;
 
 const chatDiv = document.getElementById("chatDiv");
 const discoveryDiv = document.getElementById("discoveryDiv");
@@ -120,35 +120,37 @@ function RedirectToChatroom(roomID) {
     socket.emit("tryEnterRoom", roomID);
 }
 
-// table skal gerne ikke findes i DOM'en mens dette sker, for at mindske mængden af opdateringer
 // Selve chatrummet med beskeder, brugere, osv
 function OnReceiveChatroom(room) {
     currentRoomID = room.ChatID;
 
     const messages = room.MessageList;
 
-    if (tableContainer.children.length !== 0) {
-        tableContainer.removeChild(tableContainer.firstChild);
+    if (chatLogContainer.children.length !== 0) {
+        chatLogContainer.removeChild(chatLogContainer.firstChild);
     }
 
-    table = document.createElement("table");
-    table.classList.add("ChatLog");
+    chatLog = document.createElement("div");
+    chatLog.classList.add("ChatLog");
 
     for (let i = 0; i < messages.length; i++) {
-        let tr = document.createElement("tr");
+        let message = document.createElement("div");
+        message.classList.add("ChatMessage");
 
-        let name = document.createElement("td");
+        let name = document.createElement("span");
         name.innerText = messages[i].UserName;
-        tr.appendChild(name);
+        name.classList.add("ChatMessageName");
+        message.appendChild(name);
 
-        let msg = document.createElement("td");
+        let msg = document.createElement("span");
         msg.innerText = messages[i].Message;
-        tr.appendChild(msg);
+        msg.classList.add("ChatMessageContent");
+        message.appendChild(msg);
 
-        table.appendChild(tr);
+        chatLog.appendChild(message);
     }
 
-    tableContainer.appendChild(table);
+    chatLogContainer.appendChild(chatLog);
 }
 
 
@@ -163,18 +165,23 @@ function SendMessageInChatroom() {
 }
 
 function OnNewMessageInChatroom(message) {
-    let tr = document.createElement("tr");
+    let newMessage = document.createElement("div");
+    newMessage.classList.add("ChatMessage");
 
-    let name = document.createElement("td");
+    let name = document.createElement("span");
     name.innerText = message.UserName;
-    tr.appendChild(name);
+    name.classList.add("ChatMessageName");
+    newMessage.appendChild(name);
 
-    let msg = document.createElement("td");
+    let msg = document.createElement("span");
     msg.innerText = message.Message;
-    tr.appendChild(msg);
+    msg.classList.add("ChatMessageContent");
+    newMessage.appendChild(msg);
 
-    table.appendChild(tr);
+    chatLog.appendChild(newMessage);
 }
+
+// Når der kommer nok beskeder, skubbes chatboksen under resten af siden, og beskeder forsvinder over toppen af siden sammen med topbaren
 
 
 // ========== Discovery ==========

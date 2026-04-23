@@ -63,13 +63,6 @@ body {
     align-items: center;
 }
 
-.ChatLog {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-}
-
 .ChatDiv {
     display: flex;
     flex-direction: row;
@@ -96,6 +89,59 @@ body {
 .ChatList div button {
     width: 100%;
     height: 100%;
+}
+
+.ChatWindow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-around;
+
+    height: 100%;
+    width: 100%;
+
+    margin-left: 16px;
+    margin-right: 16px;
+}
+
+#chatLogContainer {
+    height: 100%;
+    width: 100%;
+}
+
+.ChatLog {
+    display: flex;
+    flex-direction: column;
+    justify-content: end;
+    align-items: center;
+    height: 100%;
+    width: 100%;
+    overflow-y: auto;
+    row-gap: 4px;
+}
+
+.ChatMessage {
+    display: flex;
+    flex-direction: column;
+    align-self: flex-start;
+}
+
+.ChatMessageName {
+    font-weight: bold;
+    font-size: medium;
+}
+
+.ChatMessageContent {
+    font-size: medium;
+}
+
+#inputDiv {
+    height: 48px;
+    width: 100%;
+}
+
+#inputField {
+    width: 100%;
 }
 
 
