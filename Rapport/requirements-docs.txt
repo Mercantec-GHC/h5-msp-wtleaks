@@ -1,5 +1,0 @@
-# Dokumentation (MkDocs + Material)
-mkdocs-material>=9.5,<10
-mkdocs-mermaid2-plugin>=1.2
-# Én lang “print”-side → hele sitet som én PDF (Ctrl+P)
-mkdocs-print-site-plugin>=2.3

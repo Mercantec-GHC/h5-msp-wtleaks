@@ -2,3 +2,5 @@
 /site/
 /.vscode
 */node_modules/
+.env
+*.log
