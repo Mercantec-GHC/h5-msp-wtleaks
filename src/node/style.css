@@ -12,12 +12,15 @@ body {
     height: 100%;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 
 .TopBar {
     display: flex;
+    flex-shrink: 0;
     width: 100%;
     height: 28px;
+    
     background-color: darkgrey;
 }
 
@@ -26,6 +29,7 @@ body {
     flex-direction: row;
     width: 100%;
     height: 100%;
+    overflow: hidden;
 }
 
 .SideBar {
@@ -54,13 +58,6 @@ body {
     width: 100%;
     height: 100%;
     background-color: lightblue;
-}
-
-#inputDiv {
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-    align-items: center;
 }
 
 .ChatDiv {
@@ -95,29 +92,37 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: space-around;
+    justify-content: space-between;
 
-    height: 100%;
     width: 100%;
 
-    margin-left: 16px;
-    margin-right: 16px;
+    margin-left: 24px;
+
+    /*Kan måske erstattes med noget scrollbar gutter?? Pt er der tom plads bag scrollbar, som ikke ser godt ud*/
+    margin-right: 24px;
+
+    margin-bottom: 24px;
+
+    overflow: hidden;
+    row-gap: 24px;
 }
 
 #chatLogContainer {
-    height: 100%;
+    display: flex;
     width: 100%;
+    height: 100%;
+    overflow-y: auto;
 }
 
 .ChatLog {
     display: flex;
     flex-direction: column;
-    justify-content: end;
     align-items: center;
-    height: 100%;
+    margin-top: auto;
+
     width: 100%;
-    overflow-y: auto;
-    row-gap: 4px;
+    
+    row-gap: 6px;
 }
 
 .ChatMessage {
@@ -136,12 +141,26 @@ body {
 }
 
 #inputDiv {
-    height: 48px;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: flex-start;
+    
+    flex-shrink: 0;
+    height: fit-content;
     width: 100%;
+
+    column-gap: 12px;
 }
 
-#inputField {
+#chatMessageInput {
     width: 100%;
+    height: 30px;
+}
+
+#chatMessageButton {
+    width: 80px;
+    height: 100%;
 }
 
 

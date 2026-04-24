@@ -32,7 +32,7 @@ class ChatMessage {
 }
 
 
-const input = document.getElementById("inputField");
+const chatInput = document.getElementById("chatMessageInput");
 const chatLogContainer = document.getElementById("chatLogContainer");
 let chatLog = null;
 
@@ -49,7 +49,7 @@ socket.on("SessionStorage", (counter) => {
     InitSessionStorage(counter);
 });
 
-socket.on("receiveRooms", (rooms) => {
+socket.on("receiveDiscovery", (rooms) => {
     OnReceiveDiscovery(rooms);
 });
 
@@ -74,13 +74,11 @@ socket.on("redirectToRoom", (roomID) => {
 
 // pt er data bare userCounter, så altid Number
 function InitSessionStorage(data) {
-    // Hacky
-    Entry();
     sessionStorage.setItem("username", "Bruger " + String(data));
 }
 
 function Entry() {
-
+    chatInput.addEventListener("keydown", OnKeyDownChatMessageInput);
 }
 
 
@@ -156,11 +154,18 @@ function OnReceiveChatroom(room) {
 
 // ========== Messages ==========
 
+function OnKeyDownChatMessageInput(event) {
+    if (event.key === "Enter") {
+        event.preventDefault();
+        SendMessageInChatroom();
+    }
+}
+
 // Senere, når brugere er knyttet på DB, skal navn og ID findes andre steder
 function SendMessageInChatroom() {
-    if (input.value) {
-        socket.emit("chatMessageRoom", socket.id, currentRoomID, input.value);
-        input.value = "";
+    if (chatInput.value) {
+        socket.emit("chatMessageRoom", socket.id, currentRoomID, chatInput.value);
+        chatInput.value = "";
     }
 }
 
@@ -180,8 +185,6 @@ function OnNewMessageInChatroom(message) {
 
     chatLog.appendChild(newMessage);
 }
-
-// Når der kommer nok beskeder, skubbes chatboksen under resten af siden, og beskeder forsvinder over toppen af siden sammen med topbaren
 
 
 // ========== Discovery ==========
@@ -263,7 +266,7 @@ function ChangeActiveWindow(windowName) {
             chatDiv.classList.add("Hidden");
             settingsDiv.classList.add("Hidden");
             discoveryDiv.classList.remove("Hidden");
-            socket.emit("getRooms");
+            socket.emit("getDiscovery");
             break;
 
         case "settings":
@@ -303,3 +306,5 @@ function ClearElementOfChildren(elementID) {
         element.removeChild(element.lastChild);
     }
 }
+
+window.onload = Entry;

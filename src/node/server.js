@@ -94,6 +94,11 @@ app.get("/style.css", (req, res) => {
 });
 
 
+function Entry() {
+    //console.log(process.env.DATABASE_URL);
+}
+
+
 // ========== Client management ==========
 
 io.on("connection", (socket) => {
@@ -105,8 +110,8 @@ io.on("connection", (socket) => {
 
     ++userCounter;
 
-    socket.on("getRooms", () => {
-        SendRoomDiscoveryToSocket(socket);
+    socket.on("getDiscovery", () => {
+        OnSocketTryGetDiscovery(socket);
     });
 
     socket.on("getRoomList", () => {
@@ -211,6 +216,37 @@ function ServeChatroomToSocket(socket, room) {
 
 // ========== Discovery ==========
 
+function OnSocketTryGetDiscovery(socket) {
+    SendRoomDiscoveryToSocket(socket);
+    //GetChatroomListFromDB(socket);
+}
+
+async function GetChatroomListFromDB(socket) {
+    const requestOptions = {
+        method: "GET",
+        redirect: "follow"
+    };
+
+    fetch(String(process.env.API_URL) + "/rooms", requestOptions)
+        .then((response) => response.text())
+        .then((result) => ParseAndSendDiscoveryToSocket(socket, JSON.parse(result)))
+        .catch((error) => console.error(error));
+}
+
+function ParseAndSendDiscoveryToSocket(socket, chatroomsData) {
+    let chatrooms = [];
+
+    for (let i = 0; i < chatroomsData.length; i++) {
+        const data = chatroomsData[i];
+        
+        let newRoom = new Chatroom(data.id, data.name);
+        chatrooms.push(newRoom);
+    }
+
+    socket.emit("receiveDiscovery", chatrooms);
+}
+
+
 function SendRoomDiscoveryToSocket(socket) {
     // Alle mulige ting
     const uindex = users.findIndex(x => x.ID === socket.id);
@@ -218,7 +254,7 @@ function SendRoomDiscoveryToSocket(socket) {
     if (uindex !== -1) {
         const discoverableRooms = rooms.filter(x => !x.UserList.includes(socket.id));
 
-        socket.emit("receiveRooms", discoverableRooms);
+        socket.emit("receiveDiscovery", discoverableRooms);
     }
 }
 
@@ -287,3 +323,5 @@ io.engine.on("connection_error", (err) => {
 });
 
 httpServer.listen(port);
+
+Entry();
