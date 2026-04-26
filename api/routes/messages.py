@@ -36,3 +36,23 @@ def create_message(msg: MessageCreate, db: Session = Depends(get_db), current_us
 @router.get("/room/{room_id}")
 def get_messages(room_id: int, db: Session = Depends(get_db)):
     return db.query(Message).filter(Message.room_id == room_id).all()
+
+
+@router.delete("/messages/{message_id}")
+def delete_message(
+    message_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    message = db.query(Message).filter(Message.id == message_id).first()
+
+    if not message:
+        raise HTTPException(404, "Message not found")
+
+    if message.sender_id != current_user.id:
+        raise HTTPException(403, "Not allowed")
+
+    db.delete(message)
+    db.commit()
+
+    return {"status": "message deleted"}

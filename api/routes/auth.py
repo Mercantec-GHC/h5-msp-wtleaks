@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from src.schemas import UserCreate, UserLogin
 from src.models import RefreshToken, User
 from api.deps import get_db
-from core.jwt import ALGORITHM, SECRET_KEY, create_refresh_token, hash_password, verify_password, create_access_token
+from core.jwt import ALGORITHM, SECRET_KEY, create_refresh_token, get_current_user, hash_password, verify_password, create_access_token
 from jose import jwt, JWTError
 
 # This file contains the authentication routes for user signup, login, token refresh, and logout.
@@ -121,3 +121,13 @@ def logout(refresh_token: str, db: Session = Depends(get_db)):
         db.commit()
 
     return {"message": "Logged out"}        
+
+@router.delete("/users/me")
+def delete_user(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    db.delete(current_user)
+    db.commit()
+
+    return {"status": "user deleted"}

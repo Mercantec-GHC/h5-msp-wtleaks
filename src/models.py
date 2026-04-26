@@ -44,6 +44,7 @@ class Room(Base):
 
     owner_id = Column(Integer, ForeignKey("users.id"))
 
+    password_hash = Column(Integer, nullable=False)
     # Relationships
     owner = relationship("User")
     users = relationship("User", secondary=user_room, back_populates="rooms")
@@ -68,7 +69,7 @@ class Message(Base):
     status = Column(String, default="ok")
     # "ok", "deleted_user", "deleted_admin"
 
-    sender_id = Column(Integer, ForeignKey("users.id"))
+    sender_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     room_id = Column(Integer, ForeignKey("rooms.id"))
 
     # Relationships
