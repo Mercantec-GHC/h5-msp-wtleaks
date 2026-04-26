@@ -3,10 +3,12 @@ from sqlalchemy.orm import Session
 
 from api.deps import get_db
 from core.jwt import get_current_user, hash_password, verify_password
+from core.permissions import require_role
+
 from src.models import Room, User
-from src.schemas import RoomCreate
 
 router = APIRouter(prefix="/rooms", tags=["rooms"])
+
 
 @router.post("/")
 def create_room(
@@ -20,9 +22,10 @@ def create_room(
         owner_id=current_user.id,
         password_hash=hash_password(password) if password else None
     )
+
     db.add(room)
     db.commit()
-    db.refresh()
+    db.refresh(room)
 
     return room
 
@@ -39,7 +42,6 @@ def join_room(
     if not room:
         raise HTTPException(404, "Room not found")
 
-    #  only check if room is protected
     if room.password_hash:
         if not password or not verify_password(password, room.password_hash):
             raise HTTPException(403, "Invalid room password")
@@ -51,7 +53,8 @@ def join_room(
 
     return {"status": "joined"}
 
-@router.delete("/rooms/{room_id}")
+
+@router.delete("/{room_id}")
 def delete_room(
     room_id: int,
     db: Session = Depends(get_db),
@@ -62,13 +65,44 @@ def delete_room(
     if not room:
         raise HTTPException(404, "Room not found")
 
-    if room.owner_id != current_user.id:
-        raise HTTPException(403, "Not allowed")
+    require_role(db, room_id, current_user.id, "owner")
 
     db.delete(room)
     db.commit()
 
     return {"status": "room deleted"}
+
+@router.delete("/{room_id}/users/{user_id}")
+def kick_user(
+    room_id: int,
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    require_role(db, room_id, current_user.id, "admin")
+
+    room = db.query(Room).filter(Room.id == room_id).first()
+    user = db.query(User).filter(User.id == user_id).first()
+
+    if not room:
+        raise HTTPException(404, "Room not found")
+
+    if not user:
+        raise HTTPException(404, "User not found")
+
+    if user not in room.users:
+        raise HTTPException(400, "User not in room")
+
+    if room.owner_id == user.id:
+        raise HTTPException(403, "Cannot kick owner")
+
+    room.users.remove(user)
+
+    db.commit()
+
+    return {"status": "user removed"}
+
+
 
 @router.get("/")
 def get_rooms(db: Session = Depends(get_db)):

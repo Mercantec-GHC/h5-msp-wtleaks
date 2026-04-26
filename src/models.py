@@ -87,3 +87,11 @@ class RefreshToken(Base):
 
     expires_at = Column(DateTime, nullable=False)
     revoked = Column(Boolean, default=False)    
+
+class RoomRole(Base):
+    __tablename__ = "room_roles"
+
+    id = Column(Integer, primary_key=True)
+    room_id = Column(Integer, ForeignKey("rooms.id", ondelete="CASCADE"))
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
+    role = Column(String, nullable=False)    

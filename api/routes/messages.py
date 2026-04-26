@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-
 from api.deps import get_db
 from core.jwt import get_current_user
+from core.permissions import ROLE_POWER, get_room_role
 from src.models import Message, Room, User
 from src.schemas import MessageCreate
 
@@ -38,7 +38,7 @@ def get_messages(room_id: int, db: Session = Depends(get_db)):
     return db.query(Message).filter(Message.room_id == room_id).all()
 
 
-@router.delete("/messages/{message_id}")
+@router.delete("/{message_id}")
 def delete_message(
     message_id: int,
     db: Session = Depends(get_db),
@@ -49,7 +49,16 @@ def delete_message(
     if not message:
         raise HTTPException(404, "Message not found")
 
-    if message.sender_id != current_user.id:
+    # Sender can always delete own message
+    if message.sender_id == current_user.id:
+        db.delete(message)
+        db.commit()
+        return {"status": "message deleted"}
+
+    # Otherwise need moderator+
+    role = get_room_role(db, message.room_id, current_user.id)
+
+    if ROLE_POWER[role] < ROLE_POWER["moderator"]:
         raise HTTPException(403, "Not allowed")
 
     db.delete(message)
