@@ -45,6 +45,10 @@ const chatroomFormPasswordToggle = document.getElementById("createChatroomPasswo
 let currentTab = "";
 let currentRoomID = -1;
 
+socket.on("ServerMessage", (message) => {
+    OnServerMessage(message);
+});
+
 socket.on("SessionStorage", (counter) => {
     InitSessionStorage(counter);
 });
@@ -79,6 +83,10 @@ function InitSessionStorage(data) {
 
 function Entry() {
     chatInput.addEventListener("keydown", OnKeyDownChatMessageInput);
+}
+
+function OnServerMessage(message) {
+    alert(message);
 }
 
 

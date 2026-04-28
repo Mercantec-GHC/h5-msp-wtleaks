@@ -4,6 +4,7 @@ import { Server } from "socket.io";
 
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { stat } from "node:fs";
 
 class User {
     ID;
@@ -85,12 +86,21 @@ app.get("/", (req, res) => {
     res.sendFile(__dirname + "/index.html");
 });
 
-app.get("/client.js", (req, res) => {
-    res.sendFile(__dirname + "/client.js");
+app.get("/app_client.js", (req, res) => {
+    res.sendFile(__dirname + "/app_client.js");
 });
 
 app.get("/style.css", (req, res) => {
     res.sendFile(__dirname + "/style.css");
+});
+
+
+app.get("/login", (req, res) => {
+    res.sendFile(__dirname + "/login.html");
+});
+
+app.get("/login_client.js", (req, res) => {
+    res.sendFile(__dirname + "/login_client.js");
 });
 
 
@@ -102,14 +112,28 @@ function Entry() {
 // ========== Client management ==========
 
 io.on("connection", (socket) => {
-    //console.log("user connected");
+    // Temp
 
     AssignUser(socket.id);
-    socket.emit("SessionStorage", userCounter);
+    //socket.emit("SessionStorage", userCounter);
     socket.emit("setuptable", messages);
 
     ++userCounter;
 
+    // Account
+    socket.on("tryLogin", async (username, password, callback) => {
+        callback(await OnSocketTryLogin(socket, username, password));
+    });
+    
+    socket.on("tryRegister", async (username, displayname, password, callback) => {
+        callback(await OnSocketTryRegister(socket, username, displayname, password));
+    });
+
+    socket.on("changeDisplayName", (newName) => {
+        ChangeUserDisplayName(socket, newName);
+    });
+
+    // App
     socket.on("getDiscovery", () => {
         OnSocketTryGetDiscovery(socket);
     });
@@ -134,10 +158,6 @@ io.on("connection", (socket) => {
         OnNewMessageInChatroom(userID, roomID, message);
     });
 
-    socket.on("changeDisplayName", (newName) => {
-        ChangeUserDisplayName(socket, newName);
-    });
-
     socket.on("disconnect", () => {
         //console.log("user disconnected");
     });
@@ -151,6 +171,84 @@ function AssignUser(socketID) {
 
 
 // ========== Account ==========
+
+async function OnSocketTryLogin(socket, username, password) {
+    const requestOptions = {
+        method: "POST",
+        headers: {
+            "Content-type": "application/json"
+        },
+        body: JSON.stringify ({
+            username: username,
+            code: password
+        })
+    };
+
+    let callback = Object.create(null);
+
+    try {
+        const response = await fetch(String(process.env.API_URL) + "/auth/login", requestOptions);
+        const json = await response.json();
+
+        if (response.ok) {
+            callback.status = "OK";
+            callback.payload = json;
+        }
+        else {
+            callback.status = "NOK";
+        }
+    }
+    catch (error) {
+        console.error(error.message);
+        callback.status = "NOK";
+    }
+
+    return callback;
+}
+
+async function OnSocketTryRegister(socket, username, displayname, password) {
+    const requestOptions = {
+        method: "POST",
+        headers: {
+            "Content-type": "application/json"
+        },
+        body: JSON.stringify ({
+            username: username,
+            display_name: displayname,
+            code: password
+        })
+    };
+
+    let callback = Object.create(null);
+
+    try {
+        const response = await fetch(String(process.env.API_URL) + "/auth/signup", requestOptions);
+        const json = await response.json();
+
+        if (response.ok) {
+            callback.status = "OK";
+        }
+        else {
+            callback.status = "NOK";
+        }
+
+        callback.payload = json;
+
+        return callback;
+    }
+    catch (error) {
+        console.error(error.message);
+        callback.status = "NOK";
+        callback.payload.message = "Unknown error";
+
+        return callback;
+    }
+}
+
+function ProcessRegisterResult(socket, result) {
+
+    //socket.emit("ServerMessage", result);
+}
 
 // Ændrer ikke retroaktivt på beskeder. Husk at forbinde bruger id med skærmnavn, og ikke gem navnet i beskeden
 // Kan eventuelt cache/gemme en lille lookup tabel, når brugeren deltager i et chatrum, og så spare på noget data der
