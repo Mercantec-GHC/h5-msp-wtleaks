@@ -112,7 +112,8 @@ def get_my_rooms(
     return [
         {
             "id": room.id,
-            "name": room.name
+            "name": room.name,
+            "display_name": User.display_name
         }
         for room in rooms
     ]   
