@@ -131,3 +131,12 @@ def delete_user(
     db.commit()
 
     return {"status": "user deleted"}
+
+@router.get("/me")
+def get_my_profile(
+    current_user: User = Depends(get_current_user)
+):
+    return {
+        "username": current_user.username,
+        "display_name": current_user.display_name
+    }
