@@ -18,7 +18,7 @@
                     <label for="loginPassword">Adgangskode</label>
                     <input id="loginPassword" type="password">
                 </div>
-                <button class="FormButton" onclick="TryLogIn()">Log ind</button>
+                <button class="FormButton" onclick="TryLogInRequest()">Log ind</button>
                 <div>
                     <span>Har du ikke en bruger? </span>
                     <span class="RegisterSpan" onclick="SwapForms()">Opret ny bruger</span>
@@ -44,6 +44,8 @@
                     <span class="RegisterSpan" onclick="SwapForms()">Log ind</span>
                 </div>
             </div>
+
+            <button class="FormButton" onclick="TryLogInRefresh()">Refresh</button>
         </div>
     </body>
 </html>

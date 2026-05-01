@@ -1,5 +1,17 @@
 var socket = io();
 
+class User {
+    ID;
+    UserName;
+    DisplayName;
+
+    constructor (id, name, displayname) {
+        this.ID = id;
+        this.UserName = name;
+        this.DisplayName = displayname;
+    }
+}
+
 class Chatroom {
     ChatID;
     ChatName;
@@ -42,8 +54,14 @@ const settingsDiv = document.getElementById("settingsDiv");
 
 const chatroomFormPasswordToggle = document.getElementById("createChatroomPasswordToggle");
 
+let thisUser = null;
+
+let knownExternalUsers = [];
+
 let currentTab = "";
 let currentRoomID = -1;
+
+let currentRoom = null;
 
 socket.on("ServerMessage", (message) => {
     OnServerMessage(message);
@@ -65,12 +83,20 @@ socket.on("receiveChatroom", (room) => {
     OnReceiveChatroom(room);
 });
 
+socket.on("receiveMessages", (messages) => {
+    OnReceiveMessages(messages);
+});
+
 socket.on("newMessageRoom", (message) => {
     OnNewMessageInChatroom(message);
 });
 
 socket.on("redirectToRoom", (roomID) => {
     RedirectToChatroom(roomID);
+});
+
+socket.on("newUserJoined", (userID, userInfo) => {
+    OnNewUserJoinedChatroom(userID, userInfo);
 });
 
 
@@ -83,6 +109,7 @@ function InitSessionStorage(data) {
 
 function Entry() {
     chatInput.addEventListener("keydown", OnKeyDownChatMessageInput);
+    GetOwnInfo();
 }
 
 function OnServerMessage(message) {
@@ -99,6 +126,17 @@ function TryChangeDisplayName() {
     socket.emit("changeDisplayName", newName);
 }
 
+async function GetOwnInfo() {
+    const callback = await socket.emitWithAck("getOwnInfo");
+
+    if (callback.status === "OK") {
+        thisUser = new User(callback.payload.id, callback.payload.username, callback.payload.display_name);
+    }
+    else {
+        alert("Fejl");
+    }
+}
+
 
 // ========== Chatroom ==========
 
@@ -113,8 +151,8 @@ function OnReceiveChatroomList(roomList) {
         let roomListing = document.createElement("div");
 
         let button = document.createElement("button");
-        button.innerText = room.ChatName;
-        button.onclick = function () { socket.emit("tryEnterRoom", room.ChatID) };
+        button.innerText = room.name;
+        button.onclick = function () { socket.emit("tryEnterRoom", room.id) };
         roomListing.appendChild(button);
 
         chatList.appendChild(roomListing);
@@ -127,11 +165,118 @@ function RedirectToChatroom(roomID) {
 }
 
 // Selve chatrummet med beskeder, brugere, osv
-function OnReceiveChatroom(room) {
-    currentRoomID = room.ChatID;
+async function OnReceiveChatroom(room) {
+    currentRoomID = room.id;
+    currentRoom = room;
 
-    const messages = room.MessageList;
+    const messages = room.messages;
 
+    if (chatLogContainer.children.length !== 0) {
+        chatLogContainer.removeChild(chatLogContainer.firstChild);
+    }
+
+    chatLog = document.createElement("div");
+    chatLog.classList.add("ChatLog");
+
+    for (let i = 0; i < messages.length; i++) {
+        let message = document.createElement("div");
+        message.classList.add("ChatMessage");
+
+        let userString;
+        const uIndex = currentRoom.members.findIndex(u => u.id === messages[i].sender_id);
+
+        if (uIndex !== -1) {
+            userString = currentRoom.members[uIndex].display_name;
+        }
+        else {
+            // Den skriver arrayet, selv om det gerne skulle være tomt? fundet index er stadig -1, så lidt forvirret
+            //console.log(knownExternalUsers);
+            const ueIndex = knownExternalUsers.findIndex(u => u.ID === messages[i].sender_id);
+
+            if (ueIndex !== -1) {
+                userString = knownExternalUsers[ueIndex].DisplayName;
+            }
+            else {
+                const callback = await GetUnknownUserInfo(messages[i].sender_id);
+                userString = callback.payload.display_name;
+            }
+        }
+
+        let name = document.createElement("span");
+        name.innerText = userString;
+        name.classList.add("ChatMessageName");
+        message.appendChild(name);
+
+        let msg = document.createElement("span");
+        msg.innerText = messages[i].content;
+        msg.classList.add("ChatMessageContent");
+        message.appendChild(msg);
+
+        chatLog.appendChild(message);
+    }
+
+    chatLogContainer.appendChild(chatLog);
+}
+
+async function GetUnknownUserInfo(userID) {
+    const callback = await socket.emitWithAck("getUserInfo", userID);
+
+    const newUser = new User(userID, callback.payload.username, callback.payload.display_name);
+    knownExternalUsers.push(newUser);
+
+    return callback;
+}
+
+
+// ========== Messages ==========
+
+function OnKeyDownChatMessageInput(event) {
+    if (event.key === "Enter") {
+        event.preventDefault();
+        SendMessageInChatroom();
+    }
+}
+
+// Senere, når brugere er knyttet på DB, skal navn og ID findes andre steder
+function SendMessageInChatroom() {
+    if (chatInput.value) {
+        socket.emit("chatMessageRoom", socket.id, currentRoomID, chatInput.value);
+        chatInput.value = "";
+    }
+}
+
+function OnNewMessageInChatroom(message) {
+    let newMessage = document.createElement("div");
+    newMessage.classList.add("ChatMessage");
+
+    // Opret et lookup table til brugernavne, når brugeren deltager i et rum, og referér derefter dertil
+    const uindex = currentRoom.members.findIndex(u => u.id === message.sender_id);
+    const msgUsername = currentRoom.members[uindex].username;
+
+    let name = document.createElement("span");
+    name.innerText = msgUsername;
+    name.classList.add("ChatMessageName");
+    newMessage.appendChild(name);
+
+    let msg = document.createElement("span");
+    msg.innerText = message.content;
+    msg.classList.add("ChatMessageContent");
+    newMessage.appendChild(msg);
+
+    chatLog.appendChild(newMessage);
+}
+
+function OnNewUserJoinedChatroom(userID, userInfo) {
+    let newUser = Object.create(null);
+
+    newUser.id = userID;
+    newUser.username = userInfo.username;
+    newUser.display_name = userInfo.display_name;
+
+    currentRoom.members.push(newUser);
+}
+
+function OnReceiveMessages(messages) {
     if (chatLogContainer.children.length !== 0) {
         chatLogContainer.removeChild(chatLogContainer.firstChild);
     }
@@ -160,41 +305,6 @@ function OnReceiveChatroom(room) {
 }
 
 
-// ========== Messages ==========
-
-function OnKeyDownChatMessageInput(event) {
-    if (event.key === "Enter") {
-        event.preventDefault();
-        SendMessageInChatroom();
-    }
-}
-
-// Senere, når brugere er knyttet på DB, skal navn og ID findes andre steder
-function SendMessageInChatroom() {
-    if (chatInput.value) {
-        socket.emit("chatMessageRoom", socket.id, currentRoomID, chatInput.value);
-        chatInput.value = "";
-    }
-}
-
-function OnNewMessageInChatroom(message) {
-    let newMessage = document.createElement("div");
-    newMessage.classList.add("ChatMessage");
-
-    let name = document.createElement("span");
-    name.innerText = message.UserName;
-    name.classList.add("ChatMessageName");
-    newMessage.appendChild(name);
-
-    let msg = document.createElement("span");
-    msg.innerText = message.Message;
-    msg.classList.add("ChatMessageContent");
-    newMessage.appendChild(msg);
-
-    chatLog.appendChild(newMessage);
-}
-
-
 // ========== Discovery ==========
 
 function OnReceiveDiscovery(rooms) {
@@ -216,7 +326,7 @@ function OnReceiveDiscovery(rooms) {
 }
 
 function TryJoinChatroom(roomID) {
-    socket.emit("tryJoinRoom", roomID);
+    socket.emit("tryJoinRoom", thisUser.ID, roomID);
 }
 
 
