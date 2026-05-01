@@ -102,6 +102,57 @@ def kick_user(
 
     return {"status": "user removed"}
 
+@router.get("/my")
+def get_my_rooms(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    rooms = current_user.rooms
+
+    return [
+        {
+            "id": room.id,
+            "name": room.name
+        }
+        for room in rooms
+    ]   
+
+
+@router.get("/{room_id}")
+def get_room_details(
+    room_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    room = db.query(Room).filter(Room.id == room_id).first()
+
+    if not room:
+        raise HTTPException(404, "Room not found")
+
+    if current_user not in room.users:
+        raise HTTPException(403, "Not member of room")
+
+    return {
+        "id": room.id,
+        "name": room.name,
+
+        "members": [
+            {
+                "id": user.id,
+                "username": user.username
+            }
+            for user in room.users
+        ],
+
+        "messages": [
+            {
+                "id": msg.id,
+                "content": msg.content,
+                "sender_id": msg.sender_id
+            }
+            for msg in room.messages
+        ]
+    }    
 
 
 @router.get("/")
