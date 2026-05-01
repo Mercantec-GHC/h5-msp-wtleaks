@@ -23,6 +23,7 @@ def get_my_profile(
     current_user: User = Depends(get_current_user)
 ):
     return {
+        "id": current_user.id,
         "username": current_user.username,
         "display_name": current_user.display_name
     }
@@ -31,7 +32,6 @@ def get_my_profile(
 def get_user_by_id(
     user_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
 ):
     user = db.query(User).filter(User.id == user_id).first()
 
