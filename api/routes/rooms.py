@@ -148,7 +148,7 @@ def get_room_details(
             {
                 "id": user.id,
                 "username": user.username,
-                "display": user.display_name
+                "display_name": user.display_name
             }
             for user in room.users
         ],
