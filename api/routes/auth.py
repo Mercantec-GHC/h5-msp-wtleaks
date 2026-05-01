@@ -89,7 +89,7 @@ def refresh_token(refresh_token: str, db: Session = Depends(get_db)):
     if db_token.expires_at < datetime.utcnow():
         raise credentials_exception
     
-    db.token.revoked = True
+    db_token.revoked = True
 
     # If the token is valid, it retrieves the user associated with the token and generates a new access token and a new refresh token for the user. The old refresh token is deleted from the database, and the new refresh token is saved. Finally, the new access token and refresh token are returned in the response.
     user = db.query(User).filter(User.id == user_id).first()
