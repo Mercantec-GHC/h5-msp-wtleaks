@@ -113,10 +113,17 @@ def get_my_rooms(
         {
             "id": room.id,
             "name": room.name,
-            "display_name": current_user.display_name
+            "members": [
+                {
+                    "id": user.id,
+                    "display_name": user.display_name
+                }
+                for user in room.users
+            ]
         }
+
         for room in rooms
-    ]   
+    ]    
 
 
 @router.get("/{room_id}")
