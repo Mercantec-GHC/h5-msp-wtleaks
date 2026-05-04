@@ -57,11 +57,15 @@ const chatroomFormPasswordToggle = document.getElementById("createChatroomPasswo
 let thisUser = null;
 
 let knownExternalUsers = [];
+let cachedRoomIDs = [];
 
 let currentTab = "";
 let currentRoomID = -1;
-
 let currentRoom = null;
+
+socket.on("goToLogin", () => {
+    window.open("/login", "_self");
+});
 
 socket.on("ServerMessage", (message) => {
     OnServerMessage(message);
@@ -216,6 +220,8 @@ async function OnReceiveChatroom(room) {
     }
 
     chatLogContainer.appendChild(chatLog);
+
+    BuildChatroomUserList(room.members);
 }
 
 async function GetUnknownUserInfo(userID) {
@@ -225,6 +231,25 @@ async function GetUnknownUserInfo(userID) {
     knownExternalUsers.push(newUser);
 
     return callback;
+}
+
+function BuildChatroomUserList(users) {
+    const membersList = document.getElementById("chatMembersList");
+
+    ClearElementOfChildren("chatMembersList");
+
+    for (let i = 0; i < users.length; i++) {
+        const user = users[i];
+        
+        let userListing = document.createElement("div");
+
+        let button = document.createElement("button");
+        button.innerText = user.display_name;
+        //button.onclick = function () { socket.emit("tryEnterRoom", room.id) };
+        userListing.appendChild(button);
+
+        membersList.appendChild(userListing);
+    }
 }
 
 
@@ -360,7 +385,9 @@ function TryCreatePublicChatroom() {
         roomIsPrivate = true;
     }
 
-    socket.emit("tryCreatePublicChatroom", roomName);
+    console.log(thisUser.ID + " " + roomName + " " + roomPassword);
+
+    socket.emit("tryCreatePublicChatroom", thisUser.ID, roomName, roomPassword);
 }
 
 

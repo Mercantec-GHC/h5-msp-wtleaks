@@ -24,6 +24,22 @@
             }
           },
           {
+            "id": "c200d03ef0b97170",
+            "type": "leaf",
+            "pinned": true,
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Realiseret Tidsplan.md",
+                "mode": "source",
+                "source": false
+              },
+              "pinned": true,
+              "icon": "lucide-file",
+              "title": "Realiseret Tidsplan"
+            }
+          },
+          {
             "id": "c0d1746f9126675e",
             "type": "leaf",
             "state": {
@@ -201,10 +217,11 @@
   },
   "active": "07894a0773260b5d",
   "lastOpenFiles": [
+    "Realiseret Tidsplan.md",
+    "Case, uge 1.md",
     "forlobet/tidsplan.md",
     "forlobet/overblik.md",
     "skabelon/02-indledning.md",
-    "Case, uge 1.md",
     "skabelon/03-produktbeskrivelse.md",
     "skabelon/04-krav-og-maal.md",
     "skabelon-proces/02-logbog.md",

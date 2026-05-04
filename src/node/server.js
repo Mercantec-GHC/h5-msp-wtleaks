@@ -1,3 +1,5 @@
+// node --env-file=.env server.js
+
 import express from "express";
 import { createServer } from "node:http";
 import { Server } from "socket.io";
@@ -73,21 +75,9 @@ const io = new Server(httpServer, {
 app.use(express.json());
 app.use(cookieParser());
 
-let rooms = [
-    { ChatID: 0, ChatName: "Generel", UserList: [], ActiveUserList: [], MessageList: [] },
-    { ChatID: 1, ChatName: "Nørderi", UserList: [], ActiveUserList: [], MessageList: [] },
-    { ChatID: 2, ChatName: "Uartige ting", UserList: [], ActiveUserList: [], MessageList: [] },
-]
-
-let userCounter = 0;
-let chatroomCounter = 3;
-
-let users = [];
-let messages = [];
-
 
 app.get("/", (req, res) => {
-    res.sendFile(__dirname + "/index.html");
+    res.sendFile(__dirname + "/app.html");
 });
 
 app.get("/app_client.js", (req, res) => {
@@ -127,13 +117,10 @@ app.post("/login/creds", async (req, res) => {
 
 app.post("/login/refresh", async (req, res) => {
     const response = await OnClientTryLoginRefresh(req);
-    //console.log(response);
     const json = await response.json();
     console.log(json);
 
     if (response.ok) {
-        //const json = await response.json();
-        
         res.cookie("access_token", json.access_token, { httpOnly: true });
         res.cookie("refresh_token", json.refresh_token, { httpOnly: true });
         res.cookie("token_type", json.token_type, { httpOnly: true });
@@ -154,17 +141,6 @@ function Entry() {
 // ========== Client management ==========
 
 io.on("connection", (socket) => {
-    // Temp
-
-    AssignUser(socket.id);
-    //socket.emit("SessionStorage", userCounter);
-    socket.emit("setuptable", messages);
-
-    ++userCounter;
-
-    //const cookies = parse(socket.handshake.headers.cookie);
-    //console.log(cookies);
-
     // Account
     socket.on("tryLogin", async (username, password, callback) => {
         callback(await OnSocketTryLogin(socket, username, password));
@@ -207,8 +183,8 @@ io.on("connection", (socket) => {
         OnSocketTryEnterChatroom(socket, roomID);
     });
 
-    socket.on("tryCreatePublicChatroom", (chatroomName) => {
-        OnSocketTryCreatePublicChatroom(socket, chatroomName);
+    socket.on("tryCreatePublicChatroom", (userID, chatroomName, chatroomPW) => {
+        OnSocketTryCreatePublicChatroom(socket, userID, chatroomName, chatroomPW);
     });
 
     socket.on("chatMessageRoom", (userID, roomID, message) => {
@@ -219,12 +195,6 @@ io.on("connection", (socket) => {
         //console.log("user disconnected");
     });
 });
-
-
-function AssignUser(socketID) {
-    const newUser = new User(socketID, "Bruger " + String(userCounter));
-    users.push(newUser);
-}
 
 
 // ========== Account ==========
@@ -265,7 +235,6 @@ async function OnSocketTryLogin(socket, username, password) {
 
 async function OnClientTryLoginRequest(req) {
     const reqJSON = req.body;
-    //console.log(reqJSON);
 
     const requestOptions = {
         method: "POST",
@@ -280,7 +249,6 @@ async function OnClientTryLoginRequest(req) {
 
     try {
         const response = await fetch(String(process.env.API_URL) + "/auth/login", requestOptions);
-        //const json = await response.json();
         return response;
 
     }
@@ -389,6 +357,12 @@ async function OnSocketTryRegister(socket, username, displayname, password) {
 }
 
 async function OnSocketGetOwnInfo(socket) {
+    // Fixme: Tjek om brugeren overhovedet er logget ind, før de prøver at koble på
+    if (!socket.handshake.headers.cookie) {
+        socket.emit("goToLogin");
+        return;
+    }
+
     const cookies = parse(socket.handshake.headers.cookie);
 
     const requestOptions = {
@@ -405,9 +379,15 @@ async function OnSocketGetOwnInfo(socket) {
         const response = await fetch(String(process.env.API_URL) + "/auth/me", requestOptions);
         const json = await response.json();
 
+        //console.log(response);
+        //console.log(json);
+
         if (response.ok) {
             callback.status = "OK";
             callback.payload = json;
+        }
+        else if (response.status === 401) {
+            socket.emit("goToLogin");
         }
         else {
             callback.status = "NOK";
@@ -425,11 +405,13 @@ async function OnSocketGetOwnInfo(socket) {
 // Kan eventuelt cache/gemme en lille lookup tabel, når brugeren deltager i et chatrum, og så spare på noget data der
 // Rummet gemmer dog allerede på brugere, men de har ikke navne med
 function ChangeUserDisplayName(socket, newName) {
+    /*
     const uindex = users.findIndex(x => x.ID === socket.id);
 
     if (uindex !== -1) {
         users[uindex].DisplayName = newName;
     }
+    */
 }
 
 
@@ -449,6 +431,8 @@ async function SendRoomListToSocket(socket) {
     try {
         const response = await fetch(String(process.env.API_URL) + "/rooms/my", requestOptions);
         const json = await response.json();
+
+        //console.log(response);
 
         //console.log("Room List");
         //console.log(json);
@@ -542,7 +526,6 @@ async function OnSocketGetUserInfo(userID) {
 // ========== Discovery ==========
 
 function OnSocketTryGetDiscovery(socket) {
-    //SendRoomDiscoveryToSocket(socket);
     GetChatroomListFromDB(socket);
 }
 
@@ -569,18 +552,6 @@ function ParseAndSendDiscoveryToSocket(socket, chatroomsData) {
     }
 
     socket.emit("receiveDiscovery", chatrooms);
-}
-
-
-function SendRoomDiscoveryToSocket(socket) {
-    // Alle mulige ting
-    const uindex = users.findIndex(x => x.ID === socket.id);
-
-    if (uindex !== -1) {
-        const discoverableRooms = rooms.filter(x => !x.UserList.includes(socket.id));
-
-        socket.emit("receiveDiscovery", discoverableRooms);
-    }
 }
 
 async function OnSocketTryJoinChatroom(socket, userID, roomID) {
@@ -658,40 +629,44 @@ async function OnNewMessageInChatroom(socket, userID, roomID, message) {
 
             io.to(String(roomID)).emit("newMessageRoom", json);
         }
-        
     }
     catch (error) {
 
     }
-    
-
-
-    /*
-    const uindex = users.findIndex(u => u.ID === userID);
-    const cindex = rooms.findIndex(c => c.ChatID === roomID);
-
-    if (uindex !== -1 && cindex !== -1) {
-        const newMessage = new ChatMessage(userID, users[uindex].DisplayName, message);
-        rooms[cindex].MessageList.push(newMessage);
-
-        io.to(String(roomID)).emit("newMessageRoom", newMessage);
-    }
-    */
 }
 
 
 // ========== Creating chatrooms ==========
 
-function OnSocketTryCreatePublicChatroom(socket, chatroomName) {
-    const uindex = users.findIndex(u => u.ID === socket.id);
+async function OnSocketTryCreatePublicChatroom(socket, userID, chatroomName, chatroomPW) {
+    const cookies = parse(socket.handshake.headers.cookie);
 
-    if (uindex !== -1) {
-        const user = users[uindex];
+    const requestOptions = {
+        method: "POST",
+        headers: {
+            "Content-type": "application/json",
+            "Authorization": "Bearer " + cookies.access_token
+        },
+        body: JSON.stringify ({
+            name: chatroomName,
+            password: chatroomPW
+        })
+    };
 
-        const newRoom = new Chatroom(chatroomCounter++, String(chatroomName));
-        rooms.push(newRoom);
+    try {
+        const response = await fetch(String(process.env.API_URL) + "/rooms", requestOptions);
+        //console.log(response);
 
-        SocketJoinChatroom(socket, user, newRoom);
+        if (response.ok) {
+            const json = await response.json();
+            //console.log(json);
+
+            OnSocketTryJoinChatroom(socket, userID, json.id);
+        }
+        
+    }
+    catch (error) {
+        console.error(error);
     }
 }
 
