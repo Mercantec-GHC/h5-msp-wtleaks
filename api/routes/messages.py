@@ -52,6 +52,7 @@ def delete_message(
     # Sender can always delete own message
     if message.sender_id == current_user.id:
         message.status = "deleted_user"
+        delete_type = "user"
 
     else:
         # Otherwise need moderator+
@@ -61,7 +62,7 @@ def delete_message(
             raise HTTPException(403, "Not allowed")
 
         message.status = "deleted_admin"
-    
+        delete_type = "admin"
     db.commit()
 
-    return {"status": "message deleted"}
+    return {"status": "message deleted", "type": delete_type}

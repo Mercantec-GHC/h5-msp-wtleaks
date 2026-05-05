@@ -25,7 +25,8 @@ def get_my_profile(
     return {
         "id": current_user.id,
         "username": current_user.username,
-        "display_name": current_user.display_name
+        "display_name": current_user.display_name,
+        "rooms_id": [room.id for room in current_user.rooms]
     }
 
 @router.get("/users/{user_id}")
