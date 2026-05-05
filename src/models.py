@@ -8,8 +8,8 @@ from datetime import datetime
 user_room = Table(
     "user_room",
     Base.metadata,
-    Column("user_id", Integer, ForeignKey("users.id")),
-    Column("room_id", Integer, ForeignKey("rooms.id"))
+    Column("user_id", Integer, ForeignKey("users.id"), primary_key=True),
+    Column("room_id", Integer, ForeignKey("rooms.id"), primary_key=True)
 )
 
 # User model with relationships to rooms and messages
@@ -30,8 +30,8 @@ class User(Base):
 moderators_table = Table(
     "room_moderators",
     Base.metadata,
-    Column("user_id", Integer, ForeignKey("users.id")),
-    Column("room_id", Integer, ForeignKey("rooms.id"))
+    Column("user_id", Integer, ForeignKey("users.id"), primary_key=True),
+    Column("room_id", Integer, ForeignKey("rooms.id"), primary_key=True)
 )    
 
 # Room model with relationships to users and messages
