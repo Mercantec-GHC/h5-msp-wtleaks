@@ -51,17 +51,17 @@ def delete_message(
 
     # Sender can always delete own message
     if message.sender_id == current_user.id:
-        db.delete(message)
-        db.commit()
-        return {"status": "message deleted"}
+        message.status = "deleted_user"
 
-    # Otherwise need moderator+
-    role = get_room_role(db, message.room_id, current_user.id)
+    else:
+        # Otherwise need moderator+
+        role = get_room_role(db, message.room_id, current_user.id)
 
-    if ROLE_POWER[role] < ROLE_POWER["moderator"]:
-        raise HTTPException(403, "Not allowed")
+        if ROLE_POWER[role] < ROLE_POWER["moderator"]:
+            raise HTTPException(403, "Not allowed")
 
-    db.delete(message)
+        message.status = "deleted_admin"
+    
     db.commit()
 
     return {"status": "message deleted"}
