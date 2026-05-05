@@ -45,28 +45,49 @@
                         <div id="discoveryTop">
                             <span>Her finder du offentlige chatrum. Du kan også oprette dine egne!</span>
                         </div>
-                        <div id="discoveryCreateContainer" class="DiscoveryCreateContainer">
-                            <span>Opret nyt rum</span>
-                            <div class="DiscoveryCreateForm">
-                                <div class="DiscoveryFormText">
-                                    <div>
-                                        <label for="createChatroomName">Navn: </label>
-                                        <input id="createChatroomName" type="text">
+                        <div id="discoveryTopContainer" class="DiscoveryTopContainer">
+                            <div id="discoveryCreateContainer" class="DiscoveryCreateContainer">
+                                <span>Opret nyt rum</span>
+                                <div class="DiscoveryForm">
+                                    <div class="DiscoveryFormText">
+                                        <div>
+                                            <label for="createChatroomName">Navn: </label>
+                                            <input id="createChatroomName" type="text">
+                                        </div>
+                                        <div>
+                                            <label for="createChatroomPassword">Adgangskode: </label>
+                                            <input id="createChatroomPassword" type="password" disabled>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <label for="createChatroomPassword">Adgangskode: </label>
-                                        <input id="createChatroomPassword" type="text" disabled>
-                                        <input id="createChatroomPasswordToggle" type="checkbox" switch onchange="ToggleFormPassword()">
+                                    <div class="DiscoveryFormCheck">
+                                        <div>
+                                            <label for="createChatroomPrivateToggle">Privat rum? </label>
+                                            <input id="createChatroomPrivateToggle" type="checkbox" switch onchange="ToggleFormPassword()">
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="DiscoveryFormCheck">
-                                    <div>
-                                        <label for="createChatroomPrivateToggle">Privat rum? </label>
-                                        <input id="createChatroomPrivateToggle" type="checkbox" switch>
-                                    </div>
-                                </div>
+                                <button onclick="TryCreateChatroom()">Opret nyt rum</button>
                             </div>
-                            <button onclick="TryCreatePublicChatroom()">Opret nyt rum</button>
+                            <div class="DiscoveryCreateContainer">
+                                <span>Deltag i privat rum</span>
+                                <div class="DiscoveryForm">
+                                    <div class="DiscoveryFormText">
+                                        <div>
+                                            <label for="joinChatroomID">Chat ID: </label>
+                                            <input id="joinChatroomID" type="text">
+                                        </div>
+                                        <div>
+                                            <label for="joinChatroomPassword">Adgangskode: </label>
+                                            <input id="joinChatroomPassword" type="password">
+                                        </div>
+                                    </div>
+                                </div>
+                                <button onclick="TryJoinPrivateChatroom()">Deltag i rum</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="discoveryShowMember">Vis tilhørte rum? </label>
+                            <input id="discoveryShowMember" type="checkbox" onchange="ToggleFilterMemberRooms()" switch>
                         </div>
                         <div id="discoveryGrid" class="DiscoveryGrid"></div>
                     </div>

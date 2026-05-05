@@ -33,33 +33,6 @@ function SwapForms() {
     formState = 1 - Number(formState);
 }
 
-async function TryLogIn() {
-    const un = loginUNInput.value;
-    const pw = loginPWInput.value;
-
-    if (!un || !pw) {
-        alert("Udfyld venligst alle felter");
-        return;
-    }
-
-    try {
-        const callback = await socket.emitWithAck("tryLogin", un, pw);
-
-        console.log(callback);
-
-        if (callback.status === "OK") {
-            alert("Logget ind!");
-        }
-        else {
-            alert("Forkert brugernavn eller adgangskode");
-        }
-    }
-    catch (error) {
-        console.error(error);
-        alert("Ukendt loginfejl");
-    }
-}
-
 async function TryLogInRequest() {
     const un = loginUNInput.value;
     const pw = loginPWInput.value;
@@ -74,55 +47,24 @@ async function TryLogInRequest() {
         headers: {
             "Content-type": "application/json"
         },
-        body: JSON.stringify ({
+        body: JSON.stringify({
             username: un,
             code: pw
         })
     };
 
-    const response = await fetch("/login/creds", requestOptions);
+    try {
+        const response = await fetch("/login/creds", requestOptions);
 
-    console.log(response);
-
-    if (response.ok) {
-        window.open("/", "_self");
+        if (response.ok) {
+            window.open("/", "_self");
+        }
+        else {
+            alert("Forkert brugernavn eller adgangskode");
+        }
     }
-    else {
-        alert("Forkert brugernavn eller adgangskode");
-    }
-}
-
-// Ikke færdig
-async function TryLogInRefresh() {
-    const requestOptions = {
-        method: "POST",
-        headers: {
-            "Content-type": "application/json"
-        },
-        body: JSON.stringify ({
-            refresh_token: ""
-        })
-    };
-
-    const response = await fetch("/login/refresh", requestOptions);
-
-    console.log(response);
-
-    if (response.ok) {
-        
-    }
-}
-
-// Ikke færdig
-async function TryLogOut() {
-    const callback = await socket.emitWithAck("clientLogOut");
-
-    if (callback.status === "OK") {
-        alert("Logget ud!");
-        //alert(callback.payload.message);
-    }
-    else {
-        alert("Fejl");
+    catch (error) {
+        console.error(error);
     }
 }
 
@@ -150,5 +92,44 @@ async function TryRegister() {
     catch (error) {
         console.error(error);
         alert("Ukendt registreringsfejl");
+    }
+}
+
+// Ikke færdig
+async function TryLogInRefresh() {
+    const requestOptions = {
+        method: "POST",
+        headers: {
+            "Content-type": "application/json"
+        },
+        body: JSON.stringify({
+            refresh_token: ""
+        })
+    };
+
+    try {
+        const response = await fetch("/login/refresh", requestOptions);
+
+        console.log(response);
+
+        if (response.ok) {
+            
+        }
+    }
+    catch (error) {
+        console.error(error);
+    }
+}
+
+// Ikke færdig
+async function TryLogOut() {
+    const callback = await socket.emitWithAck("clientLogOut");
+
+    if (callback.status === "OK") {
+        alert("Logget ud!");
+        //alert(callback.payload.message);
+    }
+    else {
+        alert("Fejl");
     }
 }

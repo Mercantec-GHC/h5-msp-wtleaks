@@ -43,7 +43,7 @@ class ChatMessage {
     }
 }
 
-
+const chatMembersList = document.getElementById("chatMembersList");
 const chatInput = document.getElementById("chatMessageInput");
 const chatLogContainer = document.getElementById("chatLogContainer");
 let chatLog = null;
@@ -52,16 +52,22 @@ const chatDiv = document.getElementById("chatDiv");
 const discoveryDiv = document.getElementById("discoveryDiv");
 const settingsDiv = document.getElementById("settingsDiv");
 
-const chatroomFormPasswordToggle = document.getElementById("createChatroomPasswordToggle");
+const chatroomFormPrivateToggle = document.getElementById("createChatroomPrivateToggle");
 
 let thisUser = null;
 
 let knownExternalUsers = [];
 let cachedRoomIDs = [];
 
+// ID på element i brugerliste hvor en dropdown er åben
+let activeUserDropdown = -1;
+
 let currentTab = "";
 let currentRoomID = -1;
 let currentRoom = null;
+
+let discoveryRoomsIDs = [];
+let discoveryFilterMember = true;
 
 socket.on("goToLogin", () => {
     window.open("/login", "_self");
@@ -103,6 +109,14 @@ socket.on("newUserJoined", (userID, userInfo) => {
     OnNewUserJoinedChatroom(userID, userInfo);
 });
 
+socket.on("messageDeleted", (messageID, notice) => {
+    OnMessageDeleted(messageID, notice);
+});
+
+socket.on("userLeft", (userID) => {
+    OnUserLeaveChatroom(userID);
+});
+
 
 // ========== Initialisation ==========
 
@@ -135,6 +149,7 @@ async function GetOwnInfo() {
 
     if (callback.status === "OK") {
         thisUser = new User(callback.payload.id, callback.payload.username, callback.payload.display_name);
+        cachedRoomIDs = callback.payload.rooms_id;
     }
     else {
         alert("Fejl");
@@ -164,6 +179,7 @@ function OnReceiveChatroomList(roomList) {
 }
 
 function RedirectToChatroom(roomID) {
+    cachedRoomIDs.push(roomID);
     ChangeActiveWindow("chat");
     socket.emit("tryEnterRoom", roomID);
 }
@@ -185,6 +201,8 @@ async function OnReceiveChatroom(room) {
     for (let i = 0; i < messages.length; i++) {
         let message = document.createElement("div");
         message.classList.add("ChatMessage");
+
+        message.id = "msgid" + messages[i].id;
 
         let userString;
         const uIndex = currentRoom.members.findIndex(u => u.id === messages[i].sender_id);
@@ -216,12 +234,64 @@ async function OnReceiveChatroom(room) {
         msg.classList.add("ChatMessageContent");
         message.appendChild(msg);
 
+        if (messages[i].status === "ok") {
+            AppendMessageHoverMenu(message, messages[i].id, messages[i].sender_id);
+        }
+        else {
+            msg.classList.add("Removed");
+        }
+
+        /*
+        let ddContext = document.createElement("button");
+
+        let ddcIcon = document.createElement("i");
+        ddcIcon.classList.add("material-icons");
+        ddcIcon.innerText = "menu";
+        ddContext.appendChild(ddcIcon);
+
+        dropdown.appendChild(ddContext);
+        */
+
+        
+
+        /*
+        message.addEventListener("contextmenu", function(event) {
+            event.preventDefault();
+            GenerateMessageContextMenu(messages[i]);
+        }, false);
+        */
+
         chatLog.appendChild(message);
     }
 
     chatLogContainer.appendChild(chatLog);
 
     BuildChatroomUserList(room.members);
+}
+
+function AppendMessageHoverMenu(messageElement, messageID, senderID) {
+    if (senderID === thisUser.ID || currentRoom.owner_id === thisUser.ID) {
+        let dropdown = document.createElement("div");
+        dropdown.classList.add("ChatMessageDropdown");
+
+        let ddDelete = document.createElement("button");
+        ddDelete.onclick = function () {
+            DeleteMessage(currentRoomID, messageID);
+        };
+
+        let dddIcon = document.createElement("i");
+        dddIcon.classList.add("material-icons");
+        dddIcon.innerText = "close";
+        ddDelete.appendChild(dddIcon);
+
+        dropdown.appendChild(ddDelete);
+        messageElement.appendChild(dropdown);
+    }
+}
+
+function GenerateMessageContextMenu(message) {
+    let menu = document.createElement("div");
+    menu.classList.add("MessageContextMenu");
 }
 
 async function GetUnknownUserInfo(userID) {
@@ -234,22 +304,73 @@ async function GetUnknownUserInfo(userID) {
 }
 
 function BuildChatroomUserList(users) {
-    const membersList = document.getElementById("chatMembersList");
-
     ClearElementOfChildren("chatMembersList");
 
     for (let i = 0; i < users.length; i++) {
         const user = users[i];
         
-        let userListing = document.createElement("div");
-
-        let button = document.createElement("button");
-        button.innerText = user.display_name;
-        //button.onclick = function () { socket.emit("tryEnterRoom", room.id) };
-        userListing.appendChild(button);
-
-        membersList.appendChild(userListing);
+        AddUserToChatroomList(user);
     }
+}
+
+function AddUserToChatroomList(user) {
+    let userListing = document.createElement("div");
+    userListing.id = "usrid" + user.id;
+    userListing.classList.add("ChatMembersListing");
+
+    let button = document.createElement("button");
+    button.innerText = user.display_name;
+    button.onclick = function () { ToggleChatroomUserBioSmall(user.id) };
+    userListing.appendChild(button);
+
+
+    let bio = document.createElement("div");
+    bio.classList.add("UserListDropdown");
+    bio.classList.add("Hidden");
+
+    if (currentRoom.owner_id === thisUser.ID && user.id !== thisUser.ID) {
+        let bioKick = document.createElement("button");
+        bioKick.innerText = "Kick";
+        bioKick.onclick = function () {
+            KickUser(currentRoomID, user.id);
+        };
+
+        bio.appendChild(bioKick);
+    }
+    
+    userListing.appendChild(bio);
+
+
+
+    chatMembersList.appendChild(userListing);
+}
+
+function ToggleChatroomUserBioSmall(userID) {
+    if (activeUserDropdown === userID) {
+        const element = document.getElementById("usrid" + userID);
+        element.children[1].classList.add("Hidden");
+
+        activeUserDropdown = -1;
+    }
+    else if (activeUserDropdown !== -1) {
+        const oldElement = document.getElementById("usrid" + activeUserDropdown);
+        oldElement.children[1].classList.add("Hidden");
+
+        const element = document.getElementById("usrid" + userID);
+        element.children[1].classList.remove("Hidden");
+
+        activeUserDropdown = userID;
+    }
+    else {
+        const element = document.getElementById("usrid" + userID);
+        element.children[1].classList.remove("Hidden");
+
+        activeUserDropdown = userID;
+    }
+}
+
+function KickUser(roomID, userID) {
+    socket.emit("kickUser", roomID, userID);
 }
 
 
@@ -270,13 +391,18 @@ function SendMessageInChatroom() {
     }
 }
 
+// Når der modtages en ny besked i det nuværende chatrum
 function OnNewMessageInChatroom(message) {
+    currentRoom.messages.push(message);
+
     let newMessage = document.createElement("div");
     newMessage.classList.add("ChatMessage");
+    //newMessage.setAttribute("msgid", String(message.id));
+    newMessage.id = "msgid" + message.id;
 
     // Opret et lookup table til brugernavne, når brugeren deltager i et rum, og referér derefter dertil
     const uindex = currentRoom.members.findIndex(u => u.id === message.sender_id);
-    const msgUsername = currentRoom.members[uindex].username;
+    const msgUsername = currentRoom.members[uindex].display_name;
 
     let name = document.createElement("span");
     name.innerText = msgUsername;
@@ -287,6 +413,8 @@ function OnNewMessageInChatroom(message) {
     msg.innerText = message.content;
     msg.classList.add("ChatMessageContent");
     newMessage.appendChild(msg);
+
+    AppendMessageHoverMenu(newMessage, message.id, message.sender_id);
 
     chatLog.appendChild(newMessage);
 }
@@ -299,6 +427,25 @@ function OnNewUserJoinedChatroom(userID, userInfo) {
     newUser.display_name = userInfo.display_name;
 
     currentRoom.members.push(newUser);
+
+    AddUserToChatroomList(newUser);
+}
+
+function OnUserLeaveChatroom(userID) {
+    const uIndex = currentRoom.members.findIndex(u => u.id === userID);
+
+    if (uIndex !== -1) {
+        currentRoom.members.splice(uIndex, 1);
+    }
+
+    const element = document.getElementById("usrid" + userID);
+    if (element) {
+        element.parentElement.removeChild(element);
+    }
+
+    if (activeUserDropdown === userID) {
+        activeUserDropdown = -1;
+    }
 }
 
 function OnReceiveMessages(messages) {
@@ -329,29 +476,108 @@ function OnReceiveMessages(messages) {
     chatLogContainer.appendChild(chatLog);
 }
 
+function DeleteMessage(roomID, messageID) {
+    if (confirm("Er du sikker på, at du vil slette denne besked?") === true) {
+        socket.emit("deleteMessage", roomID, messageID);
+    }
+}
+
+function OnMessageDeleted(messageID, notice) {
+    const mIndex = currentRoom.messages.findIndex(m => m.id === messageID);
+    console.log(mIndex);
+
+    if (mIndex !== -1) {
+        currentRoom.messages[mIndex].content = notice;
+    }
+
+    let message = document.getElementById("msgid" + messageID);
+    let span = message.children[1];
+    span.innerText = notice;
+    span.classList.add("Removed");
+
+    if (message.children.length === 3) {
+        message.removeChild(message.lastChild);
+    }
+}
+
 
 // ========== Discovery ==========
 
 function OnReceiveDiscovery(rooms) {
+    discoveryRoomsIDs = [];
+    UpdateFilterMemberRooms();
+
+    console.log(rooms);
+
     for (let i = 0; i < rooms.length; i++) {
+        discoveryRoomsIDs.push(rooms[i].id);
+
         let box = document.createElement("div");
+        box.id = "disid" + rooms[i].id;
         box.classList.add("DiscoveryShowcaseBox");
         
         let name = document.createElement("span");
-        name.innerText = String(rooms[i].ChatName);
+        name.innerText = String(rooms[i].name);
         box.appendChild(name);
 
         let button = document.createElement("button");
         button.innerText = "Deltag";
-        button.onclick = function() { TryJoinChatroom(rooms[i].ChatID) };
+        button.onclick = function() { TryJoinPublicChatroom(rooms[i].id) };
         box.appendChild(button);
+
+        if (cachedRoomIDs.includes(rooms[i].id)) {
+            button.disabled = true;
+
+            if (discoveryFilterMember) {
+                box.classList.add("Hidden");
+            }
+        }
 
         discoveryGrid.appendChild(box);
     }
 }
 
-function TryJoinChatroom(roomID) {
-    socket.emit("tryJoinRoom", thisUser.ID, roomID);
+function UpdateFilterMemberRooms() {
+    const showCheck = document.getElementById("discoveryShowMember");
+
+    if (showCheck.checked) {
+        discoveryFilterMember = false;
+    }
+    else {
+        discoveryFilterMember = true;
+    }
+}
+
+function ToggleFilterMemberRooms() {
+    UpdateFilterMemberRooms();
+    FilterMemberRooms();
+}
+
+function FilterMemberRooms() {
+    let filteredArray = cachedRoomIDs.filter(id => discoveryRoomsIDs.includes(id));
+
+    for (let i = 0; i < filteredArray.length; i++) {
+        const element = document.getElementById("disid" + filteredArray[i]);
+
+        if (discoveryFilterMember) {
+            element.classList.add("Hidden");
+        }
+        else {
+            element.classList.remove("Hidden");
+        }
+    }
+}
+
+function TryJoinPublicChatroom(roomID) {
+    socket.emit("tryJoinRoom", thisUser.ID, roomID, "");
+}
+
+// Eventuelt gør async med ack
+function TryJoinPrivateChatroom() {
+    const roomID = document.getElementById("joinChatroomID");
+    const password = document.getElementById("joinChatroomPassword");
+
+    socket.emit("tryJoinRoom", thisUser.ID, roomID.value, password.value);
 }
 
 
@@ -360,7 +586,7 @@ function TryJoinChatroom(roomID) {
 function ToggleFormPassword() {
     const passwordField = document.getElementById("createChatroomPassword");
     
-    if (chatroomFormPasswordToggle.checked) {
+    if (chatroomFormPrivateToggle.checked) {
         passwordField.removeAttribute("disabled");
     }
     else {
@@ -368,7 +594,7 @@ function ToggleFormPassword() {
     }
 }
 
-function TryCreatePublicChatroom() {
+function TryCreateChatroom() {
     const nameField = document.getElementById("createChatroomName");
     const passwordField = document.getElementById("createChatroomPassword");
     const privateCheck = document.getElementById("createChatroomPrivateToggle");
@@ -376,18 +602,23 @@ function TryCreatePublicChatroom() {
     const roomName = nameField.value;
     let roomPassword = "";
     let roomIsPrivate = false;
-        
-    if (chatroomFormPasswordToggle.checked) {
-        roomPassword = passwordField.value;
-    }
 
     if (privateCheck.checked) {
         roomIsPrivate = true;
+        roomPassword = passwordField.value;
     }
 
-    console.log(thisUser.ID + " " + roomName + " " + roomPassword);
-
-    socket.emit("tryCreatePublicChatroom", thisUser.ID, roomName, roomPassword);
+    if (roomIsPrivate) {
+        if (roomPassword !== "") {
+            socket.emit("tryCreateChatroom", thisUser.ID, roomName, roomPassword, roomIsPrivate);
+        }
+        else {
+            alert("Kan ikke oprette privat rum uden kode");
+        }
+    }
+    else {
+        socket.emit("tryCreateChatroom", thisUser.ID, roomName, "", roomIsPrivate);
+    }
 }
 
 

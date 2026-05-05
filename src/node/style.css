@@ -170,8 +170,10 @@ body {
 
 .ChatMessage {
     display: flex;
+    position: relative;
     flex-direction: column;
     align-self: flex-start;
+    width: 100%;
 }
 
 .ChatMessageName {
@@ -181,6 +183,38 @@ body {
 
 .ChatMessageContent {
     font-size: medium;
+}
+
+.ChatMessage:hover {
+    background-color: #ffffff38;
+}
+
+.ChatMessage:hover .ChatMessageDropdown {
+    display: flex;
+}
+
+.ChatMessageDropdown {
+    display: none;
+    position: absolute;
+    flex-direction: row;
+    width: 96px;
+    height: 28px;
+    background-color: blueviolet;
+    z-index: 1;
+
+    left: calc(100% - 96px);
+    bottom: calc(100% - 8px);
+}
+
+.MessageContextMenu {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    background-color: #C0C0C0;
+    border: 1px solid blue;
+    padding: 2px;
+    margin: 0;
+    z-index: 5;
 }
 
 #inputDiv {
@@ -217,15 +251,33 @@ body {
     background-color: peachpuff;
 }
 
-.ChatMembersList div {
+.ChatMembersListing {
+    position: relative;
     text-align: center;
     width: 100%;
     height: 36px;
 }
 
-.ChatMembersList div button {
+.ChatMembersListing button {
     width: 100%;
     height: 100%;
+}
+
+.UserListDropdown {
+    position: absolute;
+    flex-direction: column;
+    width: 96px;
+    height: 64px;
+    background-color: rgb(113, 99, 126);
+    z-index: 1;
+
+    top: 0px;
+    left: -96px;
+}
+
+.UserListDropdown button {
+    height: 24px;
+    width: 100%;
 }
 
 
@@ -240,12 +292,19 @@ body {
     text-align: center;
 }
 
+.DiscoveryTopContainer {
+    display: flex;
+    flex-direction: row;
+
+    justify-content: space-evenly;
+}
+
 .DiscoveryCreateContainer {
     display: flex;
     flex-direction: column;
 }
 
-.DiscoveryCreateForm {
+.DiscoveryForm {
     display: flex;
     flex-direction: row;
 }
@@ -272,10 +331,7 @@ body {
 
 .DiscoveryGrid {
     display: grid;
-    /*
-    grid-template-columns: repeat(5, 1fr);
-    */
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(300px, 0.2fr));
     grid-auto-rows: 144px;
     margin: 20px;
     gap: 16px;
@@ -293,4 +349,8 @@ body {
 
 .Hidden {
     display: none;
+}
+
+.Removed {
+    font-style: italic;
 }
