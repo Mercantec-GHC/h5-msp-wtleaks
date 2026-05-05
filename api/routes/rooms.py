@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-
+from sqlalchemy import text
 from api.deps import get_db
 from core.jwt import get_current_user, hash_password, verify_password
 from core.permissions import require_role
@@ -50,7 +50,7 @@ def join_room(
         if not data.password or not verify_password(data.password, room.password_hash):
             raise HTTPException(403, "Invalid room password")
 
-    if current_user not in room.users:
+    if not any(u.id == current_user.id for u in room.users):
         room.users.append(current_user)
 
     db.commit()
@@ -83,28 +83,30 @@ def kick_user(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    require_role(db, room_id, current_user.id, "admin")
-
     room = db.query(Room).filter(Room.id == room_id).first()
-    user = db.query(User).filter(User.id == user_id).first()
-
     if not room:
         raise HTTPException(404, "Room not found")
 
-    if not user:
-        raise HTTPException(404, "User not found")
+    require_role(db, room_id, current_user.id, "moderator")
 
-    if user not in room.users:
-        raise HTTPException(400, "User not in room")
+    # 🔍 Check membership directly in DB
+    result = db.execute(
+        text("SELECT 1 FROM user_room WHERE user_id = :u AND room_id = :r"),
+        {"u": user_id, "r": room_id}
+    ).first()
 
-    if room.owner_id == user.id:
-        raise HTTPException(403, "Cannot kick owner")
+    if not result:
+        raise HTTPException(404, "User is not in the room")
 
-    room.users.remove(user)
+    # 🧹 Delete membership safely
+    db.execute(
+        text("DELETE FROM user_room WHERE user_id = :u AND room_id = :r"),
+        {"u": user_id, "r": room_id}
+    )
 
     db.commit()
 
-    return {"status": "user removed"}
+    return {"status": "user kicked"}
 
 @router.get("/my")
 def get_my_rooms(
