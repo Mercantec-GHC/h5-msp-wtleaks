@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from api.deps import get_db
 from core.jwt import get_current_user, hash_password, verify_password
 from core.permissions import require_role
-from src.schemas import RoomCreate
+from src.schemas import RoomCreate, JoinRoomRequest
 from src.models import Room, User
 
 router = APIRouter(prefix="/rooms", tags=["rooms"])
@@ -37,7 +37,7 @@ def create_room(
 @router.post("/{room_id}/join")
 def join_room(
     room_id: int,
-    password: str | None = None,
+    data: JoinRoomRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -47,7 +47,7 @@ def join_room(
         raise HTTPException(404, "Room not found")
 
     if room.password_hash:
-        if not password or not verify_password(password, room.password_hash):
+        if not data.password or not verify_password(data.password, room.password_hash):
             raise HTTPException(403, "Invalid room password")
 
     if current_user not in room.users:

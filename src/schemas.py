@@ -17,3 +17,6 @@ class RoomCreate(BaseModel):
 class MessageCreate(BaseModel):
     room_id: int
     content: str    
+
+class JoinRoomRequest(BaseModel):
+    password: str | None = None
