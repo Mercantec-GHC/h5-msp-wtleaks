@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import text
+from sqlalchemy import text, exists
 from api.deps import get_db
 from core.jwt import get_current_user, hash_password, verify_password
 from core.permissions import require_role
 from src.schemas import RoomCreate, JoinRoomRequest
-from src.models import Room, User
+from src.models import Room, User, user_room
 
 router = APIRouter(prefix="/rooms", tags=["rooms"])
 
@@ -33,7 +33,6 @@ def create_room(
         "is_private": new_room.is_private
     }
 
-
 @router.post("/{room_id}/join")
 def join_room(
     room_id: int,
@@ -50,10 +49,16 @@ def join_room(
         if not data.password or not verify_password(data.password, room.password_hash):
             raise HTTPException(403, "Invalid room password")
 
-    if not any(u.id == current_user.id for u in room.users):
-        room.users.append(current_user)
+    already_member = db.query(
+        exists().where(
+            (user_room.c.user_id == current_user.id) &
+            (user_room.c.room_id == room_id)
+        )
+    ).scalar()
 
-    db.commit()
+    if not already_member:
+        room.users.append(current_user)
+        db.commit()
 
     return {"status": "joined"}
 
