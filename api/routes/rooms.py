@@ -161,12 +161,16 @@ def get_room_details(
         "messages": [
             {
                 "id": msg.id,
-                "content": msg.content,
+                "content": ( "[deleted by user]" if msg.status == "deleted_user"
+                else "[deleted by admin]" if msg.status == "deleted_admin"
+                else msg.content
+                ),
+                "status": msg.status,
                 "sender_id": msg.sender_id
             }
             for msg in room.messages
         ]
-    }    
+    }   
 
 @router.post("/{room_id}/leave")
 def leave_room(
