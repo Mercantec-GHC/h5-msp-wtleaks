@@ -12,6 +12,7 @@ class UserLogin(BaseModel):
 class RoomCreate(BaseModel):
     name: str
     is_private: bool = False
+    password: str | None = None
 
 class MessageCreate(BaseModel):
     room_id: int

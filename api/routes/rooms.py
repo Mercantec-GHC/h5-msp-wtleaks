@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from api.deps import get_db
 from core.jwt import get_current_user, hash_password, verify_password
 from core.permissions import require_role
-
+from src.schemas import RoomCreate
 from src.models import Room, User
 
 router = APIRouter(prefix="/rooms", tags=["rooms"])
@@ -12,22 +12,26 @@ router = APIRouter(prefix="/rooms", tags=["rooms"])
 
 @router.post("/")
 def create_room(
-    name: str,
-    password: str | None = None,
+    room: RoomCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    room = Room(
-        name=name,
+    new_room = Room(
+        name=room.name,
+        is_private=True if room.password else room.is_private,
         owner_id=current_user.id,
-        password_hash=hash_password(password) if password else None
+        password_hash=hash_password(room.password) if room.password else None
     )
 
-    db.add(room)
+    db.add(new_room)
     db.commit()
-    db.refresh(room)
+    db.refresh(new_room)
 
-    return room
+    return {
+        "id": new_room.id,
+        "name": new_room.name,
+        "is_private": new_room.is_private
+    }
 
 
 @router.post("/{room_id}/join")
@@ -123,7 +127,7 @@ def get_my_rooms(
         }
 
         for room in rooms
-    ]    
+    ]   
 
 
 @router.get("/{room_id}")
@@ -143,6 +147,7 @@ def get_room_details(
     return {
         "id": room.id,
         "name": room.name,
+        "owner_id": room.owner_id,
 
         "members": [
             {
@@ -163,6 +168,28 @@ def get_room_details(
         ]
     }    
 
+@router.post("/{room_id}/leave")
+def leave_room(
+    room_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    room = db.query(Room).filter(Room.id == room_id).first()
+
+    if not room:
+        raise HTTPException(404, "Room not found")
+
+    if current_user not in room.users:
+        raise HTTPException(400, "You are not in this room")
+
+    # Optional: prevent owner from leaving
+    if room.owner_id == current_user.id:
+        raise HTTPException(400, "Owner cannot leave their own room")
+
+    room.users.remove(current_user)
+    db.commit()
+
+    return {"status": "left room"}
 
 @router.get("/")
 def get_rooms(db: Session = Depends(get_db)):
