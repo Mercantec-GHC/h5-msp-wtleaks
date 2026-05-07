@@ -53,7 +53,8 @@
               "title": "tidsplan"
             }
           }
-        ]
+        ],
+        "currentTab": 1
       }
     ],
     "direction": "vertical"
@@ -215,10 +216,10 @@
       "bases:Create new base": false
     }
   },
-  "active": "07894a0773260b5d",
+  "active": "c200d03ef0b97170",
   "lastOpenFiles": [
-    "Realiseret Tidsplan.md",
     "Case, uge 1.md",
+    "Realiseret Tidsplan.md",
     "forlobet/tidsplan.md",
     "forlobet/overblik.md",
     "skabelon/02-indledning.md",

@@ -28,16 +28,27 @@
                 <div id="contentDiv" class="ContentDiv">
 
                     <div id="chatDiv" class="ChatDiv Hidden">
-                        <div id="chatList" class="ChatList"></div>
+                        <div id="chatList" class="ChatList">
+                            <div class="ChatSectionHeader">
+                                <span>Dine chatrum</span>
+                            </div>
+                        </div>
                         <div id="chatWindow" class="ChatWindow">
-                            <div id="chatLogContainer"></div>
-                            <div id="inputDiv">
-                                <input id="chatMessageInput" type="text">
-                                <button id="chatMessageButton" onclick="SendMessageInChatroom()">Send</button>
+                            <div id="chatWindowHeader" class="ChatSectionHeader">
+                                <span id="chatWindowHeaderSpan"></span>
+                            </div>
+                            <div id="chatWindowContainer" class="ChatWindowContainer">
+                                <div id="chatLogContainer"></div>
+                                <div id="inputDiv">
+                                    <input id="chatMessageInput" type="text">
+                                    <button id="chatMessageButton" onclick="SendMessageInChatroom()">Send</button>
+                                </div>
                             </div>
                         </div>
                         <div id="chatMembersList" class="ChatMembersList">
-
+                            <div class="ChatSectionHeader">
+                                <span>Medlemmer</span>
+                            </div>
                         </div>
                     </div>
 

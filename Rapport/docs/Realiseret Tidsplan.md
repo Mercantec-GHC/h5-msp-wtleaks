@@ -12,6 +12,7 @@ gantt
     dateFormat  YYYY-MM-DD
     axisFormat  %d/%m
     excludes  weekends, 2026-05-14, 2026-05-15, 2026-05-25
+    %% todayMarker off
     
     section Dokumentation
     Rapportskrivning  : 2026-04-20, 20d
@@ -40,7 +41,7 @@ gantt
     Administratorer  : 2026-05-05, 1d
     Private/offentlige chatrum  : 2026-05-05, 1d
     Auth og deltagelse på chatrum  : 2026-04-27, 6d
-    Færdig MVP  : crit, milestone, 2026-05-07, 0d
+    Færdig MVP  : crit, milestone, 2026-05-08, 0d
     
     %% Uge 3
     Moderatorer  : 2026-05-12, 1d
@@ -52,7 +53,7 @@ gantt
     Fildeling  : 2026-05-12, 2d
     
     %% Uge 4
-    Ekstra styling  : 2026-05-11, 3d
+    Ekstra styling  : 2026-05-7, 5d
     Finpudsning  : 2026-05-11, 3d
     
     %% Uge 5

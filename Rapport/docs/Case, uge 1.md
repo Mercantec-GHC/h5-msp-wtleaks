@@ -14,6 +14,7 @@ gantt
     dateFormat  YYYY-MM-DD
     axisFormat  %d/%m
     excludes  weekends, 2026-05-14, 2026-05-15, 2026-05-25
+    todayMarker off
     
     section Dokumentation
     Rapportskrivning  : 2026-04-20, 20d

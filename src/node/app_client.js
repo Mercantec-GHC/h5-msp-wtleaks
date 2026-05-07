@@ -12,6 +12,7 @@ class User {
     }
 }
 
+const chatWindowHeaderSpan = document.getElementById("chatWindowHeaderSpan");
 const chatMembersList = document.getElementById("chatMembersList");
 const chatInput = document.getElementById("chatMessageInput");
 const chatLogContainer = document.getElementById("chatLogContainer");
@@ -128,14 +129,18 @@ function OnReceiveChatroomList(roomList) {
         const room = roomList[i];
         
         let roomListing = document.createElement("div");
+        roomListing.classList.add("ChatListing");
 
         let button = document.createElement("button");
+        button.id = "crlid" + room.id;
         button.innerText = room.name;
         button.onclick = function () { socket.emit("tryEnterRoom", room.id) };
         roomListing.appendChild(button);
 
         chatList.appendChild(roomListing);
     }
+
+    SetHighlightForCurrentChatroom(true);
 }
 
 // Åbner et chatrum
@@ -147,6 +152,8 @@ function RedirectToChatroom(roomID) {
 
 // Selve chatrummet med beskeder, brugere, osv
 async function OnReceiveChatroom(room) {
+    SetHighlightForCurrentChatroom(false);
+
     currentRoomID = room.id;
     currentRoom = room;
 
@@ -157,6 +164,9 @@ async function OnReceiveChatroom(room) {
     }
 
     DoShowChatFeatures(true);
+    SetHighlightForCurrentChatroom(true);
+
+    chatWindowHeaderSpan.innerText = room.name;
 
     chatLog = document.createElement("div");
     chatLog.classList.add("ChatLog");
@@ -269,7 +279,7 @@ async function GetUnknownUserInfo(userID) {
 
 // Bygger listen med brugere i et chatrum
 function BuildChatroomUserList(users) {
-    ClearElementOfChildren("chatMembersList");
+    ClearElementOfChildrenExceptFirst("chatMembersList");
 
     for (let i = 0; i < users.length; i++) {
         AddUserToChatroomList(users[i]);
@@ -356,12 +366,12 @@ function OnKickedFromRoom(roomID) {
                 chatLogContainer.removeChild(chatLogContainer.firstChild);
             }
 
-            ClearElementOfChildren("chatMembersList");
+            ClearElementOfChildrenExceptFirst("chatMembersList");
         }
 
         // Fjerner rummet fra chatlisten/opdaterer chatliste, hvis chatvinduet er åbent
         if (currentTab = "chat") {
-            ClearElementOfChildren("chatList");
+            ClearElementOfChildrenExceptFirst("chatList");
             socket.emit("getRoomList");
         }
     }
@@ -630,7 +640,7 @@ function ChangeActiveWindow(windowName) {
         ClearDiscoveryRooms();
     }
     else if (String(currentTab) === "chat") {
-        ClearElementOfChildren("chatList");
+        ClearElementOfChildrenExceptFirst("chatList");
     }
 
     currentTab = String(windowName);
@@ -664,6 +674,24 @@ function DoShowChatFeatures(bValue) {
     }
 }
 
+// Hjælper med at indikere hvilket af brugerens chatrum, de har åbent
+function SetHighlightForCurrentChatroom(bValue) {
+    if (currentRoomID === -1) {
+        return;
+    }
+
+    const element = document.getElementById("crlid" + currentRoomID);
+
+    if (element) {
+        if (bValue) {
+            element.classList.add("CurrentChat");
+        }
+        else {
+            element.classList.remove("CurrentChat");
+        }
+    }
+}
+
 // Fjerner alle de offentlige rum fra Discovery
 function ClearDiscoveryRooms() {
     const discoveryGrid = document.getElementById("discoveryGrid");
@@ -678,6 +706,14 @@ function ClearElementOfChildren(elementID) {
     const element = document.getElementById(String(elementID));
 
     while (element.firstChild) {
+        element.removeChild(element.lastChild);
+    }
+}
+
+function ClearElementOfChildrenExceptFirst(elementID) {
+    const element = document.getElementById(String(elementID));
+
+    while (element.children.length > 1) {
         element.removeChild(element.lastChild);
     }
 }
