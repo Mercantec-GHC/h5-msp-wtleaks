@@ -20,6 +20,7 @@ function OnServerMessage(message) {
     alert(message);
 }
 
+// Skifter mellem login og registrering
 function SwapForms() {
     if (!Number(formState)) {
         loginForm.classList.add("Hidden");
@@ -33,6 +34,8 @@ function SwapForms() {
     formState = 1 - Number(formState);
 }
 
+// Forsøger på at logge brugeren ind
+// Ved success modtages tokens
 async function TryLogInRequest() {
     const un = loginUNInput.value;
     const pw = loginPWInput.value;
@@ -57,6 +60,7 @@ async function TryLogInRequest() {
         const response = await fetch("/login/creds", requestOptions);
 
         if (response.ok) {
+            // Åbner siden til applikationen, hvis man kan logge ind
             window.open("/", "_self");
         }
         else {

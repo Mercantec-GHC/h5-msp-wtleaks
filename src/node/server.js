@@ -10,54 +10,6 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { stat } from "node:fs";
 
-class User {
-    ID;
-    DisplayName;
-    RoomsList;
-
-    ActiveRoomID; // Midlertidig. Kan sikkert gemmes i SessionStorage?
-
-    constructor(id, name) {
-        this.ID = id;
-        this.DisplayName = name;
-        this.RoomsList = [];
-
-        this.ActiveRoomID = -1;
-    }
-}
-
-class Chatroom {
-    ChatID;
-    ChatName;
-    UserList;
-    ActiveUserList;
-    MessageList;
-    PasswordProtected;
-    //Hidden    ; Faktor på DB, ikke så meget her
-
-    constructor(id, name) {
-        this.ChatID = id;
-        this.ChatName = name;
-        this.UserList = [];
-        this.ActiveUserList = [];
-        this.MessageList = [];
-        this.PasswordProtected = false;
-    }
-}
-
-class ChatMessage {
-    UserID;
-    UserName; // temp
-    Message;
-    // Timestamp
-
-    constructor(id, name, message) {
-        this.UserID = id;
-        this.UserName = name;
-        this.Message = message;
-    }
-}
-
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -65,12 +17,12 @@ const __dirname = dirname(__filename);
 const hostname = "127.0.0.1";
 const port = 3000;
 
-
 const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
     cors: {origin: "*" },
 });
+
 
 app.use(express.json());
 app.use(cookieParser());
@@ -188,7 +140,7 @@ io.on("connection", (socket) => {
     });
 
     socket.on("chatMessageRoom", (userID, roomID, message) => {
-        OnNewMessageInChatroom(socket, userID, roomID, message);
+        OnSocketSendMessage(socket, userID, roomID, message);
     });
 
     socket.on("deleteMessage", (roomID, messageID) => {
@@ -207,40 +159,7 @@ io.on("connection", (socket) => {
 
 // ========== Account ==========
 
-async function OnSocketTryLogin(socket, username, password) {
-    const requestOptions = {
-        method: "POST",
-        headers: {
-            "Content-type": "application/json"
-        },
-        body: JSON.stringify({
-            username: username,
-            code: password
-        })
-    };
-
-    let callback = Object.create(null);
-
-    try {
-        const response = await fetch(String(process.env.API_URL) + "/auth/login", requestOptions);
-        const json = await response.json();
-
-        if (response.ok) {
-            callback.status = "OK";
-            callback.payload = json;
-        }
-        else {
-            callback.status = "NOK";
-        }
-    }
-    catch (error) {
-        console.error(error.message);
-        callback.status = "NOK";
-    }
-
-    return callback;
-}
-
+// Når en bruger forsøger på at logge ind
 async function OnClientTryLoginRequest(req) {
     const reqJSON = req.body;
 
@@ -258,7 +177,6 @@ async function OnClientTryLoginRequest(req) {
     try {
         const response = await fetch(String(process.env.API_URL) + "/auth/login", requestOptions);
         return response;
-
     }
     catch (error) {
         console.error(error.message);
@@ -309,12 +227,7 @@ async function OnSocketClientLogOut(socket) {
         const response = await fetch(String(process.env.API_URL) + "/auth/logout", requestOptions);
         const json = await response.json();
 
-        if (response.ok) {
-            callback.status = "OK";
-        }
-        else {
-            callback.status = "NOK";
-        }
+        callback.status = response.ok ? "OK" : "NOK";
     }
     catch (error) {
         console.error(error.message);
@@ -325,6 +238,7 @@ async function OnSocketClientLogOut(socket) {
     return callback;
 }
 
+// Når en bruger gerne vil oprettes
 async function OnSocketTryRegister(socket, username, displayname, password) {
     const requestOptions = {
         method: "POST",
@@ -344,28 +258,20 @@ async function OnSocketTryRegister(socket, username, displayname, password) {
         const response = await fetch(String(process.env.API_URL) + "/auth/signup", requestOptions);
         const json = await response.json();
 
-        if (response.ok) {
-            callback.status = "OK";
-        }
-        else {
-            callback.status = "NOK";
-        }
-
+        callback.status = response.ok ? "OK" : "NOK";
         callback.payload = json;
-
-        return callback;
     }
     catch (error) {
         console.error(error.message);
         callback.status = "NOK";
         callback.payload.message = "Unknown error";
-
-        return callback;
     }
+
+    return callback;
 }
 
+// Den første handling, en bruger foretager sig. Hvis de ikke er logget ind, sendes de til loginsiden. Hvis de er, får de noget offentlig data om sig selv, som de gemmer på
 async function OnSocketGetOwnInfo(socket) {
-    // Fixme: Tjek om brugeren overhovedet er logget ind, før de prøver at koble på
     if (!socket.handshake.headers.cookie) {
         socket.emit("goToLogin");
         return;
@@ -376,7 +282,6 @@ async function OnSocketGetOwnInfo(socket) {
     const requestOptions = {
         method: "GET",
         headers: {
-            "Content-type": "application/json",
             "Authorization": "Bearer " + cookies.access_token
         }
     };
@@ -387,12 +292,11 @@ async function OnSocketGetOwnInfo(socket) {
         const response = await fetch(String(process.env.API_URL) + "/auth/me", requestOptions);
         const json = await response.json();
 
-        //console.log(response);
-        //console.log(json);
-
         if (response.ok) {
             callback.status = "OK";
             callback.payload = json;
+
+            socket.userID = json.id;
         }
         else if (response.status === 401) {
             socket.emit("goToLogin");
@@ -425,13 +329,13 @@ function ChangeUserDisplayName(socket, newName) {
 
 // ========== Chatroom ==========
 
+// Når en bruger åbner chatvinduet. Sender en liste med de chatrum, brugeren er medlem af
 async function SendRoomListToSocket(socket) {
     const cookies = parse(socket.handshake.headers.cookie);
 
     const requestOptions = {
         method: "GET",
         headers: {
-            "Content-type": "application/json",
             "Authorization": "Bearer " + cookies.access_token
         }
     };
@@ -440,11 +344,6 @@ async function SendRoomListToSocket(socket) {
         const response = await fetch(String(process.env.API_URL) + "/rooms/my", requestOptions);
         const json = await response.json();
 
-        //console.log(response);
-
-        //console.log("Room List");
-        //console.log(json);
-
         socket.emit("receiveRoomList", json);
     }
     catch (error) {
@@ -452,13 +351,13 @@ async function SendRoomListToSocket(socket) {
     }
 }
 
+// Når en bruger åbner et chatrum, de er medlem af. Sender rummets beskeder og brugerinfo
 async function OnSocketTryEnterChatroom(socket, roomID) {
     const cookies = parse(socket.handshake.headers.cookie);
 
     const requestOptions = {
         method: "GET",
         headers: {
-            "Content-type": "application/json",
             "Authorization": "Bearer " + cookies.access_token
         }
     };
@@ -468,7 +367,6 @@ async function OnSocketTryEnterChatroom(socket, roomID) {
 
         if (response.ok) {
             const json = await response.json();
-            //console.log(json);
 
             if (socket.activeRoomID !== -1) {
                 socket.leave(String(socket.activeRoomID));
@@ -477,8 +375,7 @@ async function OnSocketTryEnterChatroom(socket, roomID) {
             socket.activeRoomID = roomID;
             socket.join(String(roomID));
 
-            ServeChatroomToSocket(socket, json);
-            //ServeChatroomMessagesToSocket(socket, json);
+            socket.emit("receiveChatroom", json);
         }
     }
     catch (error) {
@@ -486,33 +383,19 @@ async function OnSocketTryEnterChatroom(socket, roomID) {
     }
 }
 
-function ServeChatroomToSocket(socket, room) {
-    socket.emit("receiveChatroom", room);
-}
-
-function ServeChatroomMessagesToSocket(socket, messages) {
-    console.log("Messages served");
-    socket.emit("receiveMessages", messages);
-}
-
+// Når en bruger gerne vil have info om en anden bruger. Bruges primært til at vise information på brugere, der har efterladt beskeder i et chatrum, de ikke længere er medlem af
 async function OnSocketGetUserInfo(userID) {
     const requestOptions = {
-        method: "GET",
-        headers: {
-            "Content-type": "application/json",
-        }
+        method: "GET"
     };
 
     let callback = Object.create(null);
 
     try {
         const response = await fetch(String(process.env.API_URL) + "/auth/users/" + userID, requestOptions);
-        //console.log("Bruger info GET:");
-        //console.log(response);
 
         if (response.ok) {
             const json = await response.json();
-            //console.log(json);
             callback.status = "OK";
             callback.payload = json;
         }
@@ -530,25 +413,36 @@ async function OnSocketGetUserInfo(userID) {
     return callback;
 }
 
+// Når en bruger forsøger at sparke en anden bruger ud af et chatrum
 async function OnSocketKickUser(socket, roomID, userID) {
     const cookies = parse(socket.handshake.headers.cookie);
 
     const requestOptions = {
         method: "DELETE",
         headers: {
-            "Content-type": "application/json",
             "Authorization": "Bearer " + cookies.access_token
-        },
-        body: JSON.stringify({
-            room_id: roomID,
-            user_id: userID
-        })
+        }
     };
 
     try {
         const response = await fetch(String(process.env.API_URL) + "/rooms/" + roomID + "/users/" + userID, requestOptions);
 
         if (response.ok) {
+            // I et mere optimalt system, vil de være en del af de her grupper uanset hvad
+            //const sockets = await io.in(String(roomID)).fetchSockets();
+
+            const sockets = await io.fetchSockets();
+            const kickedSocket = sockets.find(s => s.userID === userID);
+
+            if (kickedSocket !== undefined) {
+                if (kickedSocket.activeRoomID === roomID) {
+                    kickedSocket.leave(String(roomID));
+                    kickedSocket.activeRoomID = -1;
+                }
+
+                kickedSocket.emit("kickedFromRoom", roomID);
+            }
+
             io.to(String(roomID)).emit("userLeft", userID);
         }
     }
@@ -560,11 +454,8 @@ async function OnSocketKickUser(socket, roomID, userID) {
 
 // ========== Discovery ==========
 
-function OnSocketTryGetDiscovery(socket) {
-    GetChatroomListFromDB(socket);
-}
-
-async function GetChatroomListFromDB(socket) {
+// Når en bruger gerne vil have listen med offentlige chatrum
+async function OnSocketTryGetDiscovery(socket) {
     const requestOptions = {
         method: "GET",
         redirect: "follow"
@@ -576,10 +467,9 @@ async function GetChatroomListFromDB(socket) {
         .catch((error) => console.error(error));
 }
 
+// Når en bruger forsøger at deltage i et chatrum, som de ikke allerede er medlem af
 async function OnSocketTryJoinChatroom(socket, userID, roomID, password) {
     const cookies = parse(socket.handshake.headers.cookie);
-
-    console.log(roomID + " " + password);
 
     const requestOptions = {
         method: "POST",
@@ -588,15 +478,12 @@ async function OnSocketTryJoinChatroom(socket, userID, roomID, password) {
             "Authorization": "Bearer " + cookies.access_token
         },
         body: JSON.stringify({
-            room_id: roomID,
             password: password
         })
     };
 
     try {
         const response = await fetch(String(process.env.API_URL) + "/rooms/" + roomID + "/join", requestOptions);
-        console.log(response);
-        console.log(await response.json());
 
         if (response.ok) {
             socket.emit("redirectToRoom", roomID);
@@ -616,15 +503,15 @@ async function OnSocketJoinChatroom(socket, userID, roomID) {
         io.to(String(roomID)).emit("newUserJoined", userID, callback.payload);
     }
     else if (callback.message) {
-        console.log(callback.message);
+        console.error(callback.message);
     }
 }
 
 
 // ========== Messages ==========
 
-// Send new message to chatroom
-async function OnNewMessageInChatroom(socket, userID, roomID, message) {
+// Når en bruger vil sende en ny besked i et chatrum
+async function OnSocketSendMessage(socket, userID, roomID, message) {
     const cookies = parse(socket.handshake.headers.cookie);
 
     const requestOptions = {
@@ -649,22 +536,19 @@ async function OnNewMessageInChatroom(socket, userID, roomID, message) {
         }
     }
     catch (error) {
-
+        console.error(error);
     }
 }
 
+// Når en bruger vil slette en besked
 async function OnSocketDeleteMessage(socket, roomID, messageID) {
     const cookies = parse(socket.handshake.headers.cookie);
 
     const requestOptions = {
         method: "DELETE",
         headers: {
-            "Content-type": "application/json",
             "Authorization": "Bearer " + cookies.access_token
-        },
-        body: JSON.stringify({
-            message_id: messageID
-        })
+        }
     };
 
     try {
@@ -677,17 +561,16 @@ async function OnSocketDeleteMessage(socket, roomID, messageID) {
         }
     }
     catch (error) {
-
+        console.error(error);
     }
 }
 
 
 // ========== Creating chatrooms ==========
 
+// Når en bruger vil forsøge at oprette et nyt chatrum
 async function OnSocketTryCreateChatroom(socket, userID, chatroomName, chatroomPW, isPrivate) {
     const cookies = parse(socket.handshake.headers.cookie);
-
-    console.log(chatroomName + " " + isPrivate + " " + chatroomPW);
 
     const requestOptions = {
         method: "POST",
@@ -710,7 +593,6 @@ async function OnSocketTryCreateChatroom(socket, userID, chatroomName, chatroomP
 
             OnSocketTryJoinChatroom(socket, userID, json.id, chatroomPW);
         }
-        
     }
     catch (error) {
         console.error(error);

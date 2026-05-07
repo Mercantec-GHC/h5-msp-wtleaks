@@ -110,12 +110,14 @@ body {
 }
 
 .ChatList {
-    width: 192px;
+    width: 160px;
     height: 100%;
 
     display: flex;
     flex-direction: column;
     align-items: center;
+
+    flex-shrink: 0;
 
     background-color: peachpuff;
 }
@@ -241,12 +243,14 @@ body {
 }
 
 .ChatMembersList {
-    width: 192px;
+    width: 160px;
     height: 100%;
 
     display: flex;
     flex-direction: column;
     align-items: center;
+
+    flex-shrink: 0;
 
     background-color: peachpuff;
 }

@@ -37,19 +37,19 @@ gantt
     Videreudvikling på API  : 2026-04-27, 5d
     Oprettelse af chatrum  : 2026-04-23, 1d
     Login  : 2026-04-27, 3d
-    Administratorer  : 2026-05-05, 2d
-    Private/offentlige chatrum  : 2026-05-04, 2d
+    Administratorer  : 2026-05-05, 1d
+    Private/offentlige chatrum  : 2026-05-05, 1d
     Auth og deltagelse på chatrum  : 2026-04-27, 6d
-    Færdig MVP  : crit, milestone, 2026-05-06, 0d
+    Færdig MVP  : crit, milestone, 2026-05-07, 0d
     
     %% Uge 3
-    Moderatorer  : 2026-05-05, 1d
-    Profilbilleder  : 2026-05-05, 1d
-    Ændring af brugerinfo  : 2026-05-05, 1d
-    Sletning af beskeder  : 2026-05-06, 1d
-    Sletning af bruger  : 2026-05-06, 1d
-    Søgning på off. chatrum  : 2026-05-06, 1d
-    Fildeling  : 2026-05-07, 2d
+    Moderatorer  : 2026-05-12, 1d
+    Profilbilleder  : 2026-05-12, 1d
+    Ændring af brugerinfo  : 2026-05-12, 1d
+    Sletning af beskeder  : 2026-05-05, 1d
+    Sletning af bruger  : 2026-05-12, 1d
+    Søgning på off. chatrum  : 2026-05-12, 1d
+    Fildeling  : 2026-05-12, 2d
     
     %% Uge 4
     Ekstra styling  : 2026-05-11, 3d

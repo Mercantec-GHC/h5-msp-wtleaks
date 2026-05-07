@@ -12,37 +12,6 @@ class User {
     }
 }
 
-class Chatroom {
-    ChatID;
-    ChatName;
-    UserList;
-    ActiveUserList;
-    MessageList;
-    PasswordProtected;
-
-    constructor(id, name) {
-        this.ChatID = id;
-        this.ChatName = name;
-        this.UserList = [];
-        this.ActiveUserList = [];
-        this.MessageList = [];
-        this.PasswordProtected = false;
-    }
-}
-
-class ChatMessage {
-    UserID;
-    UserName; // temp
-    Message;
-    //Timestamp;
-
-    constructor(id, name, message) {
-        this.UserID = id;
-        this.UserName = name;
-        this.Message = message;
-    }
-}
-
 const chatMembersList = document.getElementById("chatMembersList");
 const chatInput = document.getElementById("chatMessageInput");
 const chatLogContainer = document.getElementById("chatLogContainer");
@@ -77,10 +46,6 @@ socket.on("ServerMessage", (message) => {
     OnServerMessage(message);
 });
 
-socket.on("SessionStorage", (counter) => {
-    InitSessionStorage(counter);
-});
-
 socket.on("receiveDiscovery", (rooms) => {
     OnReceiveDiscovery(rooms);
 });
@@ -91,10 +56,6 @@ socket.on("receiveRoomList", (roomList) => {
 
 socket.on("receiveChatroom", (room) => {
     OnReceiveChatroom(room);
-});
-
-socket.on("receiveMessages", (messages) => {
-    OnReceiveMessages(messages);
 });
 
 socket.on("newMessageRoom", (message) => {
@@ -113,6 +74,10 @@ socket.on("messageDeleted", (messageID, notice) => {
     OnMessageDeleted(messageID, notice);
 });
 
+socket.on("kickedFromRoom", (roomID) => {
+    OnKickedFromRoom(roomID);
+});
+
 socket.on("userLeft", (userID) => {
     OnUserLeaveChatroom(userID);
 });
@@ -120,14 +85,10 @@ socket.on("userLeft", (userID) => {
 
 // ========== Initialisation ==========
 
-// pt er data bare userCounter, så altid Number
-function InitSessionStorage(data) {
-    sessionStorage.setItem("username", "Bruger " + String(data));
-}
-
 function Entry() {
     chatInput.addEventListener("keydown", OnKeyDownChatMessageInput);
     GetOwnInfo();
+    ChangeActiveWindow("chat");
 }
 
 function OnServerMessage(message) {
@@ -161,7 +122,6 @@ async function GetOwnInfo() {
 
 // Listen af chatrum på siden
 function OnReceiveChatroomList(roomList) {
-    //console.log("Listing " + roomList.length + " rooms");
     const chatList = document.getElementById("chatList");
 
     for (let i = 0; i < roomList.length; i++) {
@@ -178,6 +138,7 @@ function OnReceiveChatroomList(roomList) {
     }
 }
 
+// Åbner et chatrum
 function RedirectToChatroom(roomID) {
     cachedRoomIDs.push(roomID);
     ChangeActiveWindow("chat");
@@ -194,6 +155,8 @@ async function OnReceiveChatroom(room) {
     if (chatLogContainer.children.length !== 0) {
         chatLogContainer.removeChild(chatLogContainer.firstChild);
     }
+
+    DoShowChatFeatures(true);
 
     chatLog = document.createElement("div");
     chatLog.classList.add("ChatLog");
@@ -252,8 +215,6 @@ async function OnReceiveChatroom(room) {
         dropdown.appendChild(ddContext);
         */
 
-        
-
         /*
         message.addEventListener("contextmenu", function(event) {
             event.preventDefault();
@@ -269,6 +230,7 @@ async function OnReceiveChatroom(room) {
     BuildChatroomUserList(room.members);
 }
 
+// Til den lille menu, der dukker op, når musen er over en besked
 function AppendMessageHoverMenu(messageElement, messageID, senderID) {
     if (senderID === thisUser.ID || currentRoom.owner_id === thisUser.ID) {
         let dropdown = document.createElement("div");
@@ -289,11 +251,13 @@ function AppendMessageHoverMenu(messageElement, messageID, senderID) {
     }
 }
 
+// WIP - til når jeg finder ud af en god løsning på at overskrive højreklik, og generelt ved, hvad jeg kunne proppe i en kontekstmenu
 function GenerateMessageContextMenu(message) {
     let menu = document.createElement("div");
     menu.classList.add("MessageContextMenu");
 }
 
+// Henter information på brugere, der har skrevet beskeder i en gruppe, de ikke længere er medlem af
 async function GetUnknownUserInfo(userID) {
     const callback = await socket.emitWithAck("getUserInfo", userID);
 
@@ -303,16 +267,16 @@ async function GetUnknownUserInfo(userID) {
     return callback;
 }
 
+// Bygger listen med brugere i et chatrum
 function BuildChatroomUserList(users) {
     ClearElementOfChildren("chatMembersList");
 
     for (let i = 0; i < users.length; i++) {
-        const user = users[i];
-        
-        AddUserToChatroomList(user);
+        AddUserToChatroomList(users[i]);
     }
 }
 
+// Tilføjer en ny bruger til brugerlisten
 function AddUserToChatroomList(user) {
     let userListing = document.createElement("div");
     userListing.id = "usrid" + user.id;
@@ -322,7 +286,6 @@ function AddUserToChatroomList(user) {
     button.innerText = user.display_name;
     button.onclick = function () { ToggleChatroomUserBioSmall(user.id) };
     userListing.appendChild(button);
-
 
     let bio = document.createElement("div");
     bio.classList.add("UserListDropdown");
@@ -339,12 +302,10 @@ function AddUserToChatroomList(user) {
     }
     
     userListing.appendChild(bio);
-
-
-
     chatMembersList.appendChild(userListing);
 }
 
+// Når man klikker på en bruger i brugerlisten
 function ToggleChatroomUserBioSmall(userID) {
     if (activeUserDropdown === userID) {
         const element = document.getElementById("usrid" + userID);
@@ -369,8 +330,41 @@ function ToggleChatroomUserBioSmall(userID) {
     }
 }
 
+// Forsøger at fjerne en bruger fra et rum
 function KickUser(roomID, userID) {
     socket.emit("kickUser", roomID, userID);
+}
+
+// Når man er blevet fjernet fra et chatrum
+function OnKickedFromRoom(roomID) {
+    const index = cachedRoomIDs.indexOf(roomID);
+
+    if (index !== -1) {
+        // Fjerner rummet fra den lokale liste til Discovery
+        cachedRoomIDs.splice(index, 1);
+
+        // Fjerner referencer fra lokal data
+        const oldRoomID = currentRoomID;
+        currentRoomID = -1;
+        currentRoom = null;
+
+        // Hvis rummet er åbent, gemmes elementer væk, og fjerner HTML-information om rummet som chatlogs og brugerliste
+        if (oldRoomID === roomID) {
+            DoShowChatFeatures(false);
+
+            if (chatLogContainer.children.length !== 0) {
+                chatLogContainer.removeChild(chatLogContainer.firstChild);
+            }
+
+            ClearElementOfChildren("chatMembersList");
+        }
+
+        // Fjerner rummet fra chatlisten/opdaterer chatliste, hvis chatvinduet er åbent
+        if (currentTab = "chat") {
+            ClearElementOfChildren("chatList");
+            socket.emit("getRoomList");
+        }
+    }
 }
 
 
@@ -383,7 +377,7 @@ function OnKeyDownChatMessageInput(event) {
     }
 }
 
-// Senere, når brugere er knyttet på DB, skal navn og ID findes andre steder
+// Sender en tekstbesked til rummet
 function SendMessageInChatroom() {
     if (chatInput.value) {
         socket.emit("chatMessageRoom", socket.id, currentRoomID, chatInput.value);
@@ -392,6 +386,7 @@ function SendMessageInChatroom() {
 }
 
 // Når der modtages en ny besked i det nuværende chatrum
+// Tilføjer beskeden til den aktuelle chatlog
 function OnNewMessageInChatroom(message) {
     currentRoom.messages.push(message);
 
@@ -419,6 +414,7 @@ function OnNewMessageInChatroom(message) {
     chatLog.appendChild(newMessage);
 }
 
+// Når det nuværende chatrum får et nyt medlem. Sørger for at vise det med det samme
 function OnNewUserJoinedChatroom(userID, userInfo) {
     let newUser = Object.create(null);
 
@@ -431,6 +427,7 @@ function OnNewUserJoinedChatroom(userID, userInfo) {
     AddUserToChatroomList(newUser);
 }
 
+// Når det nuværende chatrum mister et medlem. Sørger for at vise det med det samme
 function OnUserLeaveChatroom(userID) {
     const uIndex = currentRoom.members.findIndex(u => u.id === userID);
 
@@ -448,40 +445,14 @@ function OnUserLeaveChatroom(userID) {
     }
 }
 
-function OnReceiveMessages(messages) {
-    if (chatLogContainer.children.length !== 0) {
-        chatLogContainer.removeChild(chatLogContainer.firstChild);
-    }
-
-    chatLog = document.createElement("div");
-    chatLog.classList.add("ChatLog");
-
-    for (let i = 0; i < messages.length; i++) {
-        let message = document.createElement("div");
-        message.classList.add("ChatMessage");
-
-        let name = document.createElement("span");
-        name.innerText = messages[i].UserName;
-        name.classList.add("ChatMessageName");
-        message.appendChild(name);
-
-        let msg = document.createElement("span");
-        msg.innerText = messages[i].Message;
-        msg.classList.add("ChatMessageContent");
-        message.appendChild(msg);
-
-        chatLog.appendChild(message);
-    }
-
-    chatLogContainer.appendChild(chatLog);
-}
-
+// Prøver at slette en besked
 function DeleteMessage(roomID, messageID) {
     if (confirm("Er du sikker på, at du vil slette denne besked?") === true) {
         socket.emit("deleteMessage", roomID, messageID);
     }
 }
 
+// Fjerner beskeden i det aktuelle chatrum
 function OnMessageDeleted(messageID, notice) {
     const mIndex = currentRoom.messages.findIndex(m => m.id === messageID);
     console.log(mIndex);
@@ -503,6 +474,7 @@ function OnMessageDeleted(messageID, notice) {
 
 // ========== Discovery ==========
 
+// Når brugeren modtager listen med offentlige chatrum
 function OnReceiveDiscovery(rooms) {
     discoveryRoomsIDs = [];
     UpdateFilterMemberRooms();
@@ -540,12 +512,7 @@ function OnReceiveDiscovery(rooms) {
 function UpdateFilterMemberRooms() {
     const showCheck = document.getElementById("discoveryShowMember");
 
-    if (showCheck.checked) {
-        discoveryFilterMember = false;
-    }
-    else {
-        discoveryFilterMember = true;
-    }
+    discoveryFilterMember = showCheck.checked ? false : true;
 }
 
 function ToggleFilterMemberRooms() {
@@ -568,10 +535,12 @@ function FilterMemberRooms() {
     }
 }
 
+// Forsøger at blive medlem af et offentligt chatrum
 function TryJoinPublicChatroom(roomID) {
     socket.emit("tryJoinRoom", thisUser.ID, roomID, "");
 }
 
+// Forsøger at blive medlem af et privat chatrum
 // Eventuelt gør async med ack
 function TryJoinPrivateChatroom() {
     const roomID = document.getElementById("joinChatroomID");
@@ -583,6 +552,7 @@ function TryJoinPrivateChatroom() {
 
 // ========== Creating chatrooms ==========
 
+// Når brugeren trykker på "Privat rum?"-knappen, gøres adgangskodefeltet forholdsvist tilgængeligt
 function ToggleFormPassword() {
     const passwordField = document.getElementById("createChatroomPassword");
     
@@ -594,6 +564,7 @@ function ToggleFormPassword() {
     }
 }
 
+// Forsøger at oprette et nyt chatrum. Hvis det lykkedes, bliver brugeren automatisk medlem, og det åbnes
 function TryCreateChatroom() {
     const nameField = document.getElementById("createChatroomName");
     const passwordField = document.getElementById("createChatroomPassword");
@@ -624,6 +595,7 @@ function TryCreateChatroom() {
 
 // ========== Sidebar / GUI ==========
 
+// Ændrer på hvilken del af applikationen, der er synlig
 function ChangeActiveWindow(windowName) {
     // Åbner ikke den samme menu igen
     if (String(windowName) === String(currentTab)) {
@@ -632,10 +604,7 @@ function ChangeActiveWindow(windowName) {
 
     switch (windowName) {
         case "chat":
-            discoveryDiv.classList.add("Hidden");
-            settingsDiv.classList.add("Hidden");
-            chatDiv.classList.remove("Hidden");
-            socket.emit("getRoomList");
+            OpenChatWindow();
             break;
 
         case "rooms":
@@ -658,7 +627,7 @@ function ChangeActiveWindow(windowName) {
 
     // Hvis den gamle menu var rooms, så fjern elementerne
     if (String(currentTab) === "rooms") {
-        ClearRooms();
+        ClearDiscoveryRooms();
     }
     else if (String(currentTab) === "chat") {
         ClearElementOfChildren("chatList");
@@ -667,7 +636,36 @@ function ChangeActiveWindow(windowName) {
     currentTab = String(windowName);
 }
 
-function ClearRooms() {
+// Når chatvinduet åbnes. Hvis et chatrum ikke er åbent, så vises visse elementer ikke
+function OpenChatWindow() {
+    discoveryDiv.classList.add("Hidden");
+    settingsDiv.classList.add("Hidden");
+
+    if (currentRoomID === -1) {
+        DoShowChatFeatures(false);
+    }
+
+    chatDiv.classList.remove("Hidden");
+    socket.emit("getRoomList");
+}
+
+// Gør chatlog, chatinput og brugerliste synlige eller usynlige efter behov
+function DoShowChatFeatures(bValue) {
+    const chatWindow = document.getElementById("chatWindow");
+    const chatMembersList = document.getElementById("chatMembersList");
+
+    if (bValue) {
+        chatWindow.classList.remove("Hidden");
+        chatMembersList.classList.remove("Hidden");
+    }
+    else {
+        chatWindow.classList.add("Hidden");
+        chatMembersList.classList.add("Hidden");
+    }
+}
+
+// Fjerner alle de offentlige rum fra Discovery
+function ClearDiscoveryRooms() {
     const discoveryGrid = document.getElementById("discoveryGrid");
 
     while (discoveryGrid.firstChild) {
@@ -675,6 +673,7 @@ function ClearRooms() {
     }
 }
 
+// Hjælpefunktion til at fjerne alle børn fra et HTML-element
 function ClearElementOfChildren(elementID) {
     const element = document.getElementById(String(elementID));
 
