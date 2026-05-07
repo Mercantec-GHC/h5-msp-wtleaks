@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
-from src.schemas import UserCreate, UserLogin
+from src.schemas import UpdateRequest, UserCreate, UserLogin
 from src.models import RefreshToken, User
 from api.deps import get_db
 from core.jwt import ALGORITHM, SECRET_KEY, create_refresh_token, get_current_user, hash_password, verify_password, create_access_token
@@ -23,7 +23,6 @@ def signup(user: UserCreate, db: Session = Depends(get_db)):
     # The new user is created with the provided username and a hashed version of the code. The role is set to "user" by default. After saving the user, it returns a success message.
     new_user = User(
         username=user.username,
-        display_name=user.username,
         hashed_code=hash_password(user.code),
         role="user"
     )
@@ -158,3 +157,70 @@ def get_user_by_id(
         "display_name": user.display_name,
         "rooms_id": [room.id for room in user.rooms]
     }    
+
+@router.patch("/update")
+def update_me(
+    data: UpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if data.username:
+        existing = db.query(User).filter(
+            User.username == data.username,
+            User.id != current_user.id
+        ).first()
+
+        if existing:
+            raise HTTPException(400, "Username exists")
+        
+        current_user.username = data.username
+
+    if data.display_name:
+        current_user.display_name = data.display_name
+
+    new_access = None
+    new_refresh = None
+
+    if data.new_password:
+        if not data.current_password:
+            raise HTTPException(400, "Current password required")
+
+        if not verify_password(
+            data.current_password, 
+            current_user.password_hash
+        ):
+            
+            raise HTTPException(400, "Current password incorrect")
+
+        current_user.password_hash = hash_password(data.new_password)
+
+        db.query(RefreshToken).filter(
+            RefreshToken.user_id == current_user.id,
+            RefreshToken.revoked == False
+        ).update({
+            "revoked": True
+        })
+
+        new_access = create_access_token(current_user)
+        new_refresh, expires = create_refresh_token(current_user)
+
+        db.add(
+            RefreshToken(
+                token=new_refresh,
+                user_id=current_user.id,
+                expires_at=expires,
+                revoked=False
+            )
+        )
+
+    db.commit()
+
+    response = {
+        "status": "profile updated",
+    }
+
+    if new_access:
+        response["access_token"] = new_access
+        response["refresh_token"] = new_refresh
+
+    return response 

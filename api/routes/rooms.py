@@ -221,5 +221,16 @@ def leave_room(
     return {"status": "left room"}
 
 @router.get("/")
-def get_rooms(db: Session = Depends(get_db)):
-    return db.query(Room).all()
+def get_rooms(
+    db: Session = Depends(get_db)
+):
+    rooms = db.query(Room).filter(Room.is_private == False).all()
+
+    return [
+        {
+            "id": room.id,
+            "name": room.name,
+            "owner_id": room.owner_id
+        }
+        for room in rooms
+    ]
