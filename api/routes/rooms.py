@@ -49,16 +49,34 @@ def join_room(
         if not data.password or not verify_password(data.password, room.password_hash):
             raise HTTPException(403, "Invalid room password")
 
-    already_member = db.query(
-        exists().where(
-            (user_room.c.user_id == current_user.id) &
-            (user_room.c.room_id == room_id)
-        )
-    ).scalar()
+    existing = db.execute(
+        text("""
+            SELECT 1
+            FROM user_room
+            WHERE user_id = :user_id
+            AND room_id = :room_id
+        """),
+        {
+            "user_id": current_user.id,
+            "room_id": room.id
+        }
+    ).fetchone()
 
-    if not already_member:
-        room.users.append(current_user)
-        db.commit()
+    if existing:
+        return {"status": "already joined"}
+
+    db.execute(
+        text("""
+            INSERT INTO user_room (user_id, room_id)
+            VALUES (:user_id, :room_id)
+        """),
+        {
+            "user_id": current_user.id,
+            "room_id": room.id
+        }
+    )
+    
+    db.commit()
 
     return {"status": "joined"}
 
