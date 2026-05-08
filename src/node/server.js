@@ -85,6 +85,25 @@ app.post("/login/refresh", async (req, res) => {
 });
 
 
+app.patch("/user/update", async (req, res) => {
+    const response = await ChangeUserInfo(req);
+
+    if (response.ok) {
+        const json = await response.json();
+        
+        res.cookie("access_token", json.access_token, { httpOnly: true });
+        res.cookie("refresh_token", json.refresh_token, { httpOnly: true });
+        //res.cookie("token_type", json.token_type, { httpOnly: true });
+
+        res.status(response.status).send("Yay");
+    }
+    else {
+        console.error(response);
+        res.status(response.status).send("Nay");
+    }
+})
+
+
 function Entry() {
     //console.log(process.env.DATABASE_URL);
 }
@@ -94,10 +113,7 @@ function Entry() {
 
 io.on("connection", (socket) => {
     // Account
-    socket.on("tryLogin", async (username, password, callback) => {
-        callback(await OnSocketTryLogin(socket, username, password));
-    });
-    
+
     socket.on("tryRegister", async (username, displayname, password, callback) => {
         callback(await OnSocketTryRegister(socket, username, displayname, password));
     });
@@ -106,8 +122,8 @@ io.on("connection", (socket) => {
         callback(await OnSocketClientLogOut(socket));
     });
 
-    socket.on("changeDisplayName", (newName) => {
-        ChangeUserDisplayName(socket, newName);
+    socket.on("changeDisplayName", async (newName) => {
+        callback(await ChangeUserInfo(socket, newName));
     });
 
     // App
@@ -313,17 +329,37 @@ async function OnSocketGetOwnInfo(socket) {
     return callback;
 }
 
-// Ændrer ikke retroaktivt på beskeder. Husk at forbinde bruger id med skærmnavn, og ikke gem navnet i beskeden
-// Kan eventuelt cache/gemme en lille lookup tabel, når brugeren deltager i et chatrum, og så spare på noget data der
-// Rummet gemmer dog allerede på brugere, men de har ikke navne med
-function ChangeUserDisplayName(socket, newName) {
-    /*
-    const uindex = users.findIndex(x => x.ID === socket.id);
 
-    if (uindex !== -1) {
-        users[uindex].DisplayName = newName;
+async function ChangeUserInfo(req) {
+    const reqJSON = req.body;
+    const cookies = req.cookies;
+
+    console.log("Username: " + reqJSON.username);
+    console.log("Display Name: " + reqJSON.display_name);
+    console.log("Current Password: " + reqJSON.current_password);
+    console.log("New Password: " + reqJSON.new_password);
+
+    const requestOptions = {
+        method: "PATCH",
+        headers: {
+            "Content-type": "application/json",
+            "Authorization": "Bearer " + cookies.access_token
+        },
+        body: {
+            //username: reqJSON.username,
+            display_name: reqJSON.display_name,
+            //current_password: reqJSON.current_password,
+            //new_password: reqJSON.new_password
+        }
+    };
+
+    try {
+        const response = await fetch(String(process.env.API_URL) + "/auth/update", requestOptions);
+        return response;
     }
-    */
+    catch (error) {
+        console.error(error);
+    }
 }
 
 

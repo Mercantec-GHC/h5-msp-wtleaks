@@ -99,11 +99,37 @@ function OnServerMessage(message) {
 
 // ========== Account ==========
 
-function TryChangeDisplayName() {
+async function TryChangeUserInfo() {
     const input = document.getElementById("displayNameInput");
     const newName = input.value;
 
-    socket.emit("changeDisplayName", newName);
+    const requestOptions = {
+        method: "PATCH",
+        headers: {
+            "Content-type": "application/json"
+        },
+        body: JSON.stringify({
+            username: "",
+            display_name: newName,
+            current_password: "",
+            new_password: ""
+        })
+    };
+
+    try {
+        const response = await fetch("/user/update", requestOptions);
+
+        if (response.ok) {
+            socket.disconnect().connect();
+            GetOwnInfo();
+        }
+        else {
+            console.error(response.body);
+        }
+    }
+    catch (error) {
+        console.error(error);
+    }
 }
 
 async function GetOwnInfo() {
@@ -112,6 +138,9 @@ async function GetOwnInfo() {
     if (callback.status === "OK") {
         thisUser = new User(callback.payload.id, callback.payload.username, callback.payload.display_name);
         cachedRoomIDs = callback.payload.rooms_id;
+
+        const settingsName = document.getElementById("settingsDisplayName");
+        settingsName.innerText = thisUser.DisplayName;
     }
     else {
         alert("Fejl");

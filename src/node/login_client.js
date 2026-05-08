@@ -60,6 +60,7 @@ async function TryLogInRequest() {
         const response = await fetch("/login/creds", requestOptions);
 
         if (response.ok) {
+            socket.disconnect().connect();
             // Åbner siden til applikationen, hvis man kan logge ind
             window.open("/", "_self");
         }

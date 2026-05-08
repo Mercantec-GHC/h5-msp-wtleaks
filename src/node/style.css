@@ -374,6 +374,84 @@ body {
     background-color: antiquewhite;
 }
 
+
+.SettingsFrame {
+    display: flex;
+    flex-direction: column;
+
+    width: 512px;
+    padding: 48px;
+
+    position: absolute;
+    top: 20%;
+    left: calc(50% + 32px);
+    margin-right: -50%;
+    transform: translate(-50%, -20%);
+    
+    align-items: center;
+    justify-content: center;
+
+    margin: auto;
+}
+
+.SettingsUserField {
+    display: flex;
+    flex-direction: column;
+
+    width: 100%;
+
+    padding: 24px;
+}
+
+.SettingsUserFieldCover {
+    display: flex;
+    flex-direction: row;
+
+    align-items: center;
+    justify-content: space-between;
+}
+
+.SettingsUserFieldLeft {
+    display: flex;
+    flex-direction: column;
+}
+
+.SettingsUserFieldRight {
+
+}
+
+.SettingsUserFieldInput {
+    display: flex;
+    flex-direction: column;
+
+    padding-left: 32px;
+    padding-right: 32px;
+}
+
+.SettingsUserFieldInputContent {
+    display: flex;
+    flex-direction: column;
+}
+
+.SettingsUserFieldInputButtons {
+    display: flex;
+    flex-direction: row;
+
+    justify-content: space-around;
+}
+
+.SettingsFieldCoverHeader {
+    font-weight: bold;
+    font-size: 1em;
+    margin: 0px;
+}
+
+.SettingsFieldCoverValue {
+    font-size: 1em;
+    margin: 0px;
+}
+
+
 .Hidden {
     display: none;
 }
