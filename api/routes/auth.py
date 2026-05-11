@@ -164,7 +164,7 @@ def update_me(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    if data.username:
+    if data.username is not None:
         existing = db.query(User).filter(
             User.username == data.username,
             User.id != current_user.id
@@ -175,24 +175,24 @@ def update_me(
         
         current_user.username = data.username
 
-    if data.display_name:
+    if data.display_name is not None:
         current_user.display_name = data.display_name
 
     new_access = None
     new_refresh = None
 
-    if data.new_password:
+    if data.new_password is not None:
         if not data.current_password:
             raise HTTPException(400, "Current password required")
 
         if not verify_password(
             data.current_password, 
-            current_user.password_hash
+            current_user.hashed_code
         ):
             
             raise HTTPException(400, "Current password incorrect")
 
-        current_user.password_hash = hash_password(data.new_password)
+        current_user.hashed_code = hash_password(data.new_password)
 
         db.query(RefreshToken).filter(
             RefreshToken.user_id == current_user.id,
