@@ -44,13 +44,13 @@ gantt
     Færdig MVP  : crit, milestone, 2026-05-08, 0d
     
     %% Uge 3
-    Moderatorer  : 2026-05-12, 1d
-    Profilbilleder  : 2026-05-12, 1d
-    Ændring af brugerinfo  : 2026-05-12, 1d
+    Moderatorer  : 2026-05-19, 1d
+    Profilbilleder  : 2026-05-19, 1d
+    Ændring af brugerinfo  : 2026-05-11, 2d
     Sletning af beskeder  : 2026-05-05, 1d
-    Sletning af bruger  : 2026-05-12, 1d
-    Søgning på off. chatrum  : 2026-05-12, 1d
-    Fildeling  : 2026-05-12, 2d
+    Sletning af bruger  : 2026-05-19, 1d
+    Søgning på off. chatrum  : 2026-05-19, 1d
+    Fildeling  : 2026-05-19, 2d
     
     %% Uge 4
     Ekstra styling  : 2026-05-7, 5d

@@ -334,10 +334,12 @@ async function ChangeUserInfo(req) {
     const reqJSON = req.body;
     const cookies = req.cookies;
 
+    /*
     console.log("Username: " + reqJSON.username);
     console.log("Display Name: " + reqJSON.display_name);
     console.log("Current Password: " + reqJSON.current_password);
     console.log("New Password: " + reqJSON.new_password);
+    */
 
     const requestOptions = {
         method: "PATCH",
@@ -345,12 +347,12 @@ async function ChangeUserInfo(req) {
             "Content-type": "application/json",
             "Authorization": "Bearer " + cookies.access_token
         },
-        body: {
+        body: JSON.stringify({
             //username: reqJSON.username,
             display_name: reqJSON.display_name,
             //current_password: reqJSON.current_password,
             //new_password: reqJSON.new_password
-        }
+        })
     };
 
     try {
@@ -432,6 +434,7 @@ async function OnSocketGetUserInfo(userID) {
 
         if (response.ok) {
             const json = await response.json();
+
             callback.status = "OK";
             callback.payload = json;
         }
@@ -614,7 +617,7 @@ async function OnSocketTryCreateChatroom(socket, userID, chatroomName, chatroomP
             "Content-type": "application/json",
             "Authorization": "Bearer " + cookies.access_token
         },
-        body: JSON.stringify ({
+        body: JSON.stringify({
             name: chatroomName,
             is_private: isPrivate,
             password: chatroomPW

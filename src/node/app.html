@@ -53,10 +53,10 @@
                     </div>
 
                     <div id="discoveryDiv" class="DiscoveryWindow Hidden">
-                        <div id="discoveryTop">
+                        <div id="discoveryTop" class="LightText">
                             <span>Her finder du offentlige chatrum. Du kan også oprette dine egne!</span>
                         </div>
-                        <div id="discoveryTopContainer" class="DiscoveryTopContainer">
+                        <div id="discoveryTopContainer" class="DiscoveryTopContainer LightText">
                             <div id="discoveryCreateContainer" class="DiscoveryCreateContainer">
                                 <span>Opret nyt rum</span>
                                 <div class="DiscoveryForm">
@@ -96,7 +96,7 @@
                                 <button onclick="TryJoinPrivateChatroom()">Deltag i rum</button>
                             </div>
                         </div>
-                        <div>
+                        <div class="LightText">
                             <label for="discoveryShowMember">Vis tilhørte rum? </label>
                             <input id="discoveryShowMember" type="checkbox" onchange="ToggleFilterMemberRooms()" switch>
                         </div>
@@ -105,6 +105,7 @@
 
                     <div id="settingsDiv" class="SettingsWindow Hidden">
                         <div class="SettingsFrame">
+
                             <div class="SettingsUserField">
                                 <div class="SettingsUserFieldCover">
                                     <div class="SettingsUserFieldLeft">
@@ -112,33 +113,66 @@
                                         <p id="settingsDisplayName" class="SettingsFieldCoverValue"></p>
                                     </div>
                                     <div class="SettingsUserFieldRight">
-                                        <p>hej</p>
+                                        <button class="SettingsButton" onclick="ToggleSettingsInput('displayname')">Ændr</button>
                                     </div>
                                 </div>
-                                <div class="SettingsUserFieldInput">
+                                <div id="settingsDisplayNameInput" class="SettingsUserFieldInput Hidden">
                                     <div class="SettingsUserFieldInputContent">
-                                        <label for="displayNameInput">Synlige navn:</label>
+                                        <label for="displayNameInput">Nyt synligt navn:</label>
                                         <input id="displayNameInput" type="text">
                                     </div>
                                     <div class="SettingsUserFieldInputButtons">
-                                        <button>Annullér</button>
-                                        <button>Opdater</button>
+                                        <button class="SettingsApplyButton BtnCancel" onclick="ToggleSettingsInput('displayname')">Annullér</button>
+                                        <button class="SettingsApplyButton BtnConfirm" onclick="TryChangeUserInfo()">Opdater</button>
                                     </div>
                                 </div>
                             </div>
-                            <div class="SettingsUserField">
-                                <label for="usernameInput">Brugernavn:</label>
-                                <input id="usernameInput" type="text">
-                            </div>
-                            <div class="SettingsUserField">
-                                <label for="currentPasswordInput">Nuværende adgangskode:</label>
-                                <input id="currentPasswordInput" type="password">
 
-                                <label for="newPasswordInput">Ny adgangskode:</label>
-                                <input id="newPasswordInput" type="password">
+                            <div class="SettingsUserField">
+                                <div class="SettingsUserFieldCover">
+                                    <div class="SettingsUserFieldLeft">
+                                        <p class="SettingsFieldCoverHeader">Brugernavn</p>
+                                        <p id="settingsUserName" class="SettingsFieldCoverValue"></p>
+                                    </div>
+                                    <div class="SettingsUserFieldRight">
+                                        <button class="SettingsButton" onclick="ToggleSettingsInput('username')">Ændr</button>
+                                    </div>
+                                </div>
+                                <div id="settingsUserNameInput" class="SettingsUserFieldInput Hidden">
+                                    <div class="SettingsUserFieldInputContent">
+                                        <label for="usernameInput">Nyt brugernavn:</label>
+                                        <input id="usernameInput" type="text">
+                                    </div>
+                                    <div class="SettingsUserFieldInputButtons">
+                                        <button class="SettingsApplyButton BtnCancel" onclick="ToggleSettingsInput('username')">Annullér</button>
+                                        <button class="SettingsApplyButton BtnConfirm">Opdater</button>
+                                    </div>
+                                </div>
                             </div>
-                            
-                            <button onclick="TryChangeUserInfo()">Opdater</button>
+
+                            <div class="SettingsUserField">
+                                <div class="SettingsUserFieldCover">
+                                    <div class="SettingsUserFieldLeft">
+                                        <p class="SettingsFieldCoverHeader">Adgangskode</p>
+                                    </div>
+                                    <div class="SettingsUserFieldRight">
+                                        <button class="SettingsButton" onclick="ToggleSettingsInput('password')">Ændr</button>
+                                    </div>
+                                </div>
+                                <div id="settingsPasswordInput" class="SettingsUserFieldInput Hidden">
+                                    <div class="SettingsUserFieldInputContent">
+                                        <label for="currentPasswordInput">Nuværende adgangskode:</label>
+                                        <input id="currentPasswordInput" type="password">
+
+                                        <label for="newPasswordInput">Ny adgangskode:</label>
+                                        <input id="newPasswordInput" type="password">
+                                    </div>
+                                    <div class="SettingsUserFieldInputButtons">
+                                        <button class="SettingsApplyButton BtnCancel" onclick="ToggleSettingsInput('password')">Annullér</button>
+                                        <button class="SettingsApplyButton BtnConfirm">Opdater</button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

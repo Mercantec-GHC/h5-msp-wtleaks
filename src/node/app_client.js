@@ -24,6 +24,10 @@ const settingsDiv = document.getElementById("settingsDiv");
 
 const chatroomFormPrivateToggle = document.getElementById("createChatroomPrivateToggle");
 
+const settingsDisplayNameInput = document.getElementById("settingsDisplayNameInput");
+const settingsUserNameInput = document.getElementById("settingsUserNameInput");
+const settingsPasswordInput = document.getElementById("settingsPasswordInput");
+
 let thisUser = null;
 
 let knownExternalUsers = [];
@@ -84,7 +88,8 @@ socket.on("userLeft", (userID) => {
 });
 
 
-// ========== Initialisation ==========
+
+// =============== Initialisation ===============
 
 function Entry() {
     chatInput.addEventListener("keydown", OnKeyDownChatMessageInput);
@@ -97,7 +102,8 @@ function OnServerMessage(message) {
 }
 
 
-// ========== Account ==========
+
+// =============== Account ===============
 
 async function TryChangeUserInfo() {
     const input = document.getElementById("displayNameInput");
@@ -139,8 +145,11 @@ async function GetOwnInfo() {
         thisUser = new User(callback.payload.id, callback.payload.username, callback.payload.display_name);
         cachedRoomIDs = callback.payload.rooms_id;
 
-        const settingsName = document.getElementById("settingsDisplayName");
-        settingsName.innerText = thisUser.DisplayName;
+        const settingsDisplayName = document.getElementById("settingsDisplayName");
+        settingsDisplayName.innerText = thisUser.DisplayName;
+
+        const settingsUserName = document.getElementById("settingsUserName");
+        settingsUserName.innerText = thisUser.UserName;
     }
     else {
         alert("Fejl");
@@ -148,7 +157,8 @@ async function GetOwnInfo() {
 }
 
 
-// ========== Chatroom ==========
+
+// =============== Chatroom ===============
 
 // Listen af chatrum på siden
 function OnReceiveChatroomList(roomList) {
@@ -157,10 +167,11 @@ function OnReceiveChatroomList(roomList) {
     for (let i = 0; i < roomList.length; i++) {
         const room = roomList[i];
         
-        let roomListing = document.createElement("div");
+        const roomListing = document.createElement("div");
         roomListing.classList.add("ChatListing");
 
-        let button = document.createElement("button");
+        const button = document.createElement("button");
+        button.classList.add("LightText");
         button.id = "crlid" + room.id;
         button.innerText = room.name;
         button.onclick = function () { socket.emit("tryEnterRoom", room.id) };
@@ -201,7 +212,7 @@ async function OnReceiveChatroom(room) {
     chatLog.classList.add("ChatLog");
 
     for (let i = 0; i < messages.length; i++) {
-        let message = document.createElement("div");
+        const message = document.createElement("div");
         message.classList.add("ChatMessage");
 
         message.id = "msgid" + messages[i].id;
@@ -226,12 +237,12 @@ async function OnReceiveChatroom(room) {
             }
         }
 
-        let name = document.createElement("span");
+        const name = document.createElement("span");
         name.innerText = userString;
         name.classList.add("ChatMessageName");
         message.appendChild(name);
 
-        let msg = document.createElement("span");
+        const msg = document.createElement("span");
         msg.innerText = messages[i].content;
         msg.classList.add("ChatMessageContent");
         message.appendChild(msg);
@@ -272,15 +283,15 @@ async function OnReceiveChatroom(room) {
 // Til den lille menu, der dukker op, når musen er over en besked
 function AppendMessageHoverMenu(messageElement, messageID, senderID) {
     if (senderID === thisUser.ID || currentRoom.owner_id === thisUser.ID) {
-        let dropdown = document.createElement("div");
+        const dropdown = document.createElement("div");
         dropdown.classList.add("ChatMessageDropdown");
 
-        let ddDelete = document.createElement("button");
+        const ddDelete = document.createElement("button");
         ddDelete.onclick = function () {
             DeleteMessage(currentRoomID, messageID);
         };
 
-        let dddIcon = document.createElement("i");
+        const dddIcon = document.createElement("i");
         dddIcon.classList.add("material-icons");
         dddIcon.innerText = "close";
         ddDelete.appendChild(dddIcon);
@@ -292,7 +303,7 @@ function AppendMessageHoverMenu(messageElement, messageID, senderID) {
 
 // WIP - til når jeg finder ud af en god løsning på at overskrive højreklik, og generelt ved, hvad jeg kunne proppe i en kontekstmenu
 function GenerateMessageContextMenu(message) {
-    let menu = document.createElement("div");
+    const menu = document.createElement("div");
     menu.classList.add("MessageContextMenu");
 }
 
@@ -317,31 +328,77 @@ function BuildChatroomUserList(users) {
 
 // Tilføjer en ny bruger til brugerlisten
 function AddUserToChatroomList(user) {
-    let userListing = document.createElement("div");
+    const userListing = document.createElement("div");
     userListing.id = "usrid" + user.id;
     userListing.classList.add("ChatMembersListing");
 
-    let button = document.createElement("button");
+    const button = document.createElement("button");
     button.innerText = user.display_name;
     button.onclick = function () { ToggleChatroomUserBioSmall(user.id) };
     userListing.appendChild(button);
 
-    let bio = document.createElement("div");
+    const bio = BuildMiniBio(user);
+    
+    userListing.appendChild(bio);
+    chatMembersList.appendChild(userListing);
+}
+
+// Tilføjer minibiografien, der kan ses når man klikker på en bruger i brugerlisten
+function BuildMiniBio(user) {
+    // Ramme
+    const bio = document.createElement("div");
     bio.classList.add("UserListDropdown");
     bio.classList.add("Hidden");
 
+    // Indhold
+    const bioList = document.createElement("div");
+    bioList.classList.add("MiniBioContent");
+
+    // Billede
+    const bioPicture = document.createElement("div");
+    bioPicture.classList.add("PHCircle");
+    bioList.appendChild(bioPicture);
+
+    // Synligt navn + brugernavn
+    const bioNames = document.createElement("div");
+    bioNames.classList.add("MiniBioNames");
+    bioNames.classList.add("LightText");
+
+    const bioDisplayName = document.createElement("p");
+    bioDisplayName.innerText = user.display_name;
+    bioNames.appendChild(bioDisplayName);
+
+    const bioUserName = document.createElement("p");
+    bioUserName.innerText = "(" + user.username + ")";
+    bioNames.appendChild(bioUserName);
+
+    bioList.appendChild(bioNames);
+
+    // Skiller navne og knapper/menu
+    const bioDivider = document.createElement("div");
+    bioDivider.classList.add("MiniBioDivider");
+    bioList.appendChild(bioDivider);
+
+    // Holder på knapper
+    const bioButtons = document.createElement("div");
+    bioButtons.classList.add("MiniBioButtons");
+
     if (currentRoom.owner_id === thisUser.ID && user.id !== thisUser.ID) {
-        let bioKick = document.createElement("button");
+        const bioKick = document.createElement("button");
+        bioKick.classList.add("BtnWarn");
         bioKick.innerText = "Kick";
         bioKick.onclick = function () {
             KickUser(currentRoomID, user.id);
         };
 
-        bio.appendChild(bioKick);
+        bioButtons.appendChild(bioKick);
     }
-    
-    userListing.appendChild(bio);
-    chatMembersList.appendChild(userListing);
+
+    bioList.appendChild(bioButtons);
+
+    bio.appendChild(bioList);
+
+    return bio;
 }
 
 // Når man klikker på en bruger i brugerlisten
@@ -407,7 +464,8 @@ function OnKickedFromRoom(roomID) {
 }
 
 
-// ========== Messages ==========
+
+// =============== Messages ===============
 
 function OnKeyDownChatMessageInput(event) {
     if (event.key === "Enter") {
@@ -429,7 +487,7 @@ function SendMessageInChatroom() {
 function OnNewMessageInChatroom(message) {
     currentRoom.messages.push(message);
 
-    let newMessage = document.createElement("div");
+    const newMessage = document.createElement("div");
     newMessage.classList.add("ChatMessage");
     //newMessage.setAttribute("msgid", String(message.id));
     newMessage.id = "msgid" + message.id;
@@ -438,12 +496,12 @@ function OnNewMessageInChatroom(message) {
     const uindex = currentRoom.members.findIndex(u => u.id === message.sender_id);
     const msgUsername = currentRoom.members[uindex].display_name;
 
-    let name = document.createElement("span");
+    const name = document.createElement("span");
     name.innerText = msgUsername;
     name.classList.add("ChatMessageName");
     newMessage.appendChild(name);
 
-    let msg = document.createElement("span");
+    const msg = document.createElement("span");
     msg.innerText = message.content;
     msg.classList.add("ChatMessageContent");
     newMessage.appendChild(msg);
@@ -455,7 +513,7 @@ function OnNewMessageInChatroom(message) {
 
 // Når det nuværende chatrum får et nyt medlem. Sørger for at vise det med det samme
 function OnNewUserJoinedChatroom(userID, userInfo) {
-    let newUser = Object.create(null);
+    const newUser = Object.create(null);
 
     newUser.id = userID;
     newUser.username = userInfo.username;
@@ -500,8 +558,8 @@ function OnMessageDeleted(messageID, notice) {
         currentRoom.messages[mIndex].content = notice;
     }
 
-    let message = document.getElementById("msgid" + messageID);
-    let span = message.children[1];
+    const message = document.getElementById("msgid" + messageID);
+    const span = message.children[1];
     span.innerText = notice;
     span.classList.add("Removed");
 
@@ -511,7 +569,8 @@ function OnMessageDeleted(messageID, notice) {
 }
 
 
-// ========== Discovery ==========
+
+// =============== Discovery ===============
 
 // Når brugeren modtager listen med offentlige chatrum
 function OnReceiveDiscovery(rooms) {
@@ -523,15 +582,15 @@ function OnReceiveDiscovery(rooms) {
     for (let i = 0; i < rooms.length; i++) {
         discoveryRoomsIDs.push(rooms[i].id);
 
-        let box = document.createElement("div");
+        const box = document.createElement("div");
         box.id = "disid" + rooms[i].id;
         box.classList.add("DiscoveryShowcaseBox");
         
-        let name = document.createElement("span");
+        const name = document.createElement("span");
         name.innerText = String(rooms[i].name);
         box.appendChild(name);
 
-        let button = document.createElement("button");
+        const button = document.createElement("button");
         button.innerText = "Deltag";
         button.onclick = function() { TryJoinPublicChatroom(rooms[i].id) };
         box.appendChild(button);
@@ -560,7 +619,7 @@ function ToggleFilterMemberRooms() {
 }
 
 function FilterMemberRooms() {
-    let filteredArray = cachedRoomIDs.filter(id => discoveryRoomsIDs.includes(id));
+    const filteredArray = cachedRoomIDs.filter(id => discoveryRoomsIDs.includes(id));
 
     for (let i = 0; i < filteredArray.length; i++) {
         const element = document.getElementById("disid" + filteredArray[i]);
@@ -589,7 +648,8 @@ function TryJoinPrivateChatroom() {
 }
 
 
-// ========== Creating chatrooms ==========
+
+// =============== Creating chatrooms ===============
 
 // Når brugeren trykker på "Privat rum?"-knappen, gøres adgangskodefeltet forholdsvist tilgængeligt
 function ToggleFormPassword() {
@@ -632,7 +692,8 @@ function TryCreateChatroom() {
 }
 
 
-// ========== Sidebar / GUI ==========
+
+// =============== Sidebar / GUI ===============
 
 // Ændrer på hvilken del af applikationen, der er synlig
 function ChangeActiveWindow(windowName) {
@@ -684,6 +745,8 @@ function OpenChatWindow() {
         DoShowChatFeatures(false);
     }
 
+    ClearElementOfChildrenExceptFirst("chatList");
+
     chatDiv.classList.remove("Hidden");
     socket.emit("getRoomList");
 }
@@ -718,6 +781,34 @@ function SetHighlightForCurrentChatroom(bValue) {
         else {
             element.classList.remove("CurrentChat");
         }
+    }
+}
+
+function ToggleSettingsInput(name) {
+    let element;
+
+    switch (name) {
+        case "displayname":
+            element = settingsDisplayNameInput;
+            break;
+
+        case "username":
+            element = settingsUserNameInput;
+            break;
+
+        case "password":
+            element = settingsPasswordInput;
+            break;
+    
+        default:
+            break;
+    }
+
+    if (element.classList.contains("Hidden")) {
+        element.classList.remove("Hidden");
+    }
+    else {
+        element.classList.add("Hidden");
     }
 }
 
