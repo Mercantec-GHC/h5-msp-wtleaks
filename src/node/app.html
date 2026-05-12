@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>WTLeaks</title>
+        <link rel="stylesheet" href="style.css">
+        <script src="/socket.io/socket.io.js"></script>
+        <script defer src="/app_client.js"></script>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    </head>
+    <body>
+        <div id="bigDiv">
+            <div id="topDiv" class="TopBar">
+
+            </div>
+            <div id="mainDiv" class="MainDiv">
+                <div id="sideBarDiv" class="SideBar">
+                    <button onclick="ChangeActiveWindow('chat')">
+                        <i class="material-icons">chat</i>
+                    </button>
+                    <button onclick="ChangeActiveWindow('rooms')">
+                        <i class="material-icons">diversity_3</i>
+                    </button>
+                    <button onclick="ChangeActiveWindow('settings')">
+                        <i class="material-icons">settings</i>
+                    </button>
+                </div>
+
+                <div id="contentDiv" class="ContentDiv">
+
+                    <div id="chatDiv" class="ChatDiv Hidden">
+                        <div id="chatList" class="ChatList">
+                            <div class="ChatSectionHeader">
+                                <span>Dine chatrum</span>
+                            </div>
+                        </div>
+                        <div id="chatWindow" class="ChatWindow">
+                            <div id="chatWindowHeader" class="ChatSectionHeader">
+                                <span id="chatWindowHeaderSpan"></span>
+                            </div>
+                            <div id="chatWindowContainer" class="ChatWindowContainer">
+                                <div id="chatLogContainer"></div>
+                                <div id="inputDiv">
+                                    <input id="chatMessageInput" type="text">
+                                    <button id="chatMessageButton" onclick="SendMessageInChatroom()">Send</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="chatMembersList" class="ChatMembersList">
+                            <div class="ChatSectionHeader">
+                                <span>Medlemmer</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="discoveryDiv" class="DiscoveryWindow Hidden">
+                        <div id="discoveryTopContainer" class="DiscoveryTopContainer LightText">
+                            <div class="DiscoveryTopDesc">
+                                <span>Her finder du chatrum, du kan deltage i. Du kan også oprette dine egne!</span>
+                            </div>
+                            <div class="DiscoveryTopContent">
+                                <div class="DiscoveryCreateContainer">
+                                    <span>Opret nyt rum</span>
+                                    <div class="DiscoveryForm">
+                                        <div class="DiscoveryFormText">
+                                            <div class="DiscoveryFormPair">
+                                                <label for="createChatroomName">Navn: </label>
+                                                <input id="createChatroomName" type="text">
+                                            </div>
+                                            <div class="DiscoveryFormCheck">
+                                                <label for="createChatroomPrivateToggle">Privat rum? </label>
+                                                <input id="createChatroomPrivateToggle" type="checkbox" switch onchange="ToggleFormPassword()">
+                                            </div>
+                                            <div class="DiscoveryFormPair">
+                                                <label for="createChatroomPassword">Adgangskode: </label>
+                                                <input id="createChatroomPassword" type="password" disabled>
+                                            </div>
+                                        </div>
+                                        <button onclick="TryCreateChatroom()">Opret nyt rum</button>
+                                    </div>
+                                </div>
+                                <div class="DiscoveryCreateContainer">
+                                    <span>Deltag i privat rum</span>
+                                    <div class="DiscoveryForm">
+                                        <div class="DiscoveryFormText">
+                                            <div class="DiscoveryFormPair">
+                                                <label for="joinChatroomID">Chat ID: </label>
+                                                <input id="joinChatroomID" type="text">
+                                            </div>
+                                            <div class="DiscoveryFormPair">
+                                                <label for="joinChatroomPassword">Adgangskode: </label>
+                                                <input id="joinChatroomPassword" type="password">
+                                            </div>
+                                        </div>
+                                        <button onclick="TryJoinPrivateChatroom()">Deltag i rum</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="DiscoveryPreGrid LightText">
+                            <label for="discoveryShowMember">Vis tilhørte rum? </label>
+                            <input id="discoveryShowMember" type="checkbox" onchange="ToggleFilterMemberRooms()" switch>
+                        </div>
+                        <div id="discoveryGrid" class="DiscoveryGrid"></div>
+                    </div>
+
+                    <div id="settingsDiv" class="SettingsWindow Hidden">
+                        <div class="SettingsFrame">
+
+                            <div class="SettingsUserField">
+                                <div class="SettingsUserFieldCover">
+                                    <div class="SettingsUserFieldLeft">
+                                        <p class="SettingsFieldCoverHeader">Synlige navn</p>
+                                        <p id="settingsDisplayName" class="SettingsFieldCoverValue"></p>
+                                    </div>
+                                    <div class="SettingsUserFieldRight">
+                                        <button class="SettingsButton" onclick="ToggleSettingsInput('displayname')">Ændr</button>
+                                    </div>
+                                </div>
+                                <div id="settingsDisplayNameInput" class="SettingsUserFieldInput Hidden">
+                                    <div class="SettingsUserFieldInputContent">
+                                        <label for="displayNameInput">Nyt synligt navn:</label>
+                                        <input id="displayNameInput" type="text">
+                                    </div>
+                                    <div class="SettingsUserFieldInputButtons">
+                                        <button class="SettingsApplyButton BtnCancel" onclick="ToggleSettingsInput('displayname')">Annullér</button>
+                                        <button class="SettingsApplyButton BtnConfirm" onclick="TryChangeUserInfo()">Opdater</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="SettingsUserField">
+                                <div class="SettingsUserFieldCover">
+                                    <div class="SettingsUserFieldLeft">
+                                        <p class="SettingsFieldCoverHeader">Brugernavn</p>
+                                        <p id="settingsUserName" class="SettingsFieldCoverValue"></p>
+                                    </div>
+                                    <div class="SettingsUserFieldRight">
+                                        <button class="SettingsButton" onclick="ToggleSettingsInput('username')">Ændr</button>
+                                    </div>
+                                </div>
+                                <div id="settingsUserNameInput" class="SettingsUserFieldInput Hidden">
+                                    <div class="SettingsUserFieldInputContent">
+                                        <label for="usernameInput">Nyt brugernavn:</label>
+                                        <input id="usernameInput" type="text">
+                                    </div>
+                                    <div class="SettingsUserFieldInputButtons">
+                                        <button class="SettingsApplyButton BtnCancel" onclick="ToggleSettingsInput('username')">Annullér</button>
+                                        <button class="SettingsApplyButton BtnConfirm">Opdater</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="SettingsUserField">
+                                <div class="SettingsUserFieldCover">
+                                    <div class="SettingsUserFieldLeft">
+                                        <p class="SettingsFieldCoverHeader">Adgangskode</p>
+                                    </div>
+                                    <div class="SettingsUserFieldRight">
+                                        <button class="SettingsButton" onclick="ToggleSettingsInput('password')">Ændr</button>
+                                    </div>
+                                </div>
+                                <div id="settingsPasswordInput" class="SettingsUserFieldInput Hidden">
+                                    <div class="SettingsUserFieldInputContent">
+                                        <label for="currentPasswordInput">Nuværende adgangskode:</label>
+                                        <input id="currentPasswordInput" type="password">
+
+                                        <label for="newPasswordInput">Ny adgangskode:</label>
+                                        <input id="newPasswordInput" type="password">
+                                    </div>
+                                    <div class="SettingsUserFieldInputButtons">
+                                        <button class="SettingsApplyButton BtnCancel" onclick="ToggleSettingsInput('password')">Annullér</button>
+                                        <button class="SettingsApplyButton BtnConfirm">Opdater</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>

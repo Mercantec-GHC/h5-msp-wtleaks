@@ -1,0 +1,784 @@
+html {
+    height: 100%;
+
+    font-family: "Roboto", sans-serif;
+}
+
+body {
+    margin: 0;
+    height: 100%;
+}
+
+.ContentDiv {
+    width: 100%;
+    height: 100%;
+    background-color: rgb(25, 30, 35);
+}
+
+input[type=text] {
+    border: 0px none transparent;
+    border-radius: 8px;
+
+    padding: 8px;
+}
+
+input[type=password] {
+    border: 0px none transparent;
+    border-radius: 8px;
+
+    padding: 8px;
+}
+
+/* Login */
+
+.CentreDiv {
+    display: flex;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin-right: -50%;
+    transform: translate(-50%, -50%);
+    
+    align-items: center;
+    justify-content: center;
+
+    margin: auto;
+}
+
+.LoginContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    width: 320px;
+    height: 320px;
+    padding: 48px 72px;
+
+    background-color: rgb(30, 35, 40);
+    border-radius: 12px;
+    border-color: rgb(40, 50, 55);
+    border-style: solid;
+    border-width: 2px;
+}
+
+.FormPair {
+    display: flex;
+    flex-direction: column;
+
+    width: 100%;
+    text-align: left;
+    margin-bottom: 12px;
+}
+
+.FormPair input {
+    margin-top: 4px;
+}
+
+.FormButton {
+    height: 40px;
+    width: 100%;
+
+    flex-shrink: 0;
+
+    margin-top: 36px;
+    margin-bottom: 8px;
+
+    background-color: rgb(215, 215, 215);
+    border-radius: 8px;
+    border-style: none;
+}
+
+.FormButton:hover {
+    background-color: rgb(180, 180, 180);
+}
+
+.RegisterSpan {
+    color: dodgerblue;
+}
+
+.RegisterSpan:hover {
+    cursor: pointer !important;
+    text-decoration: underline !important;
+}
+
+
+/* App */
+
+#bigDiv {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.TopBar {
+    display: flex;
+    flex-shrink: 0;
+    width: 100%;
+    height: 36px;
+    
+    border-width: 0px 0px 2px 0px;
+    border-color: rgb(85, 110, 120);
+    border-style: solid;
+    
+    background-color: rgb(5, 5, 5);
+}
+
+.MainDiv {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.SideBar {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+
+    align-items: center;
+    width: 64px;
+    background-color: rgb(20, 25, 30);
+    height: 100%;
+
+    padding-top: 4px;
+    row-gap: 4px;
+}
+
+.SideBar button {
+    width: 56px;
+    height: 56px;
+    border: 1px solid transparent;
+    background-color: lightgrey;
+    border-radius: 28px;
+}
+
+.SideBar button i {
+    font-size: 36px;
+    line-height: normal;
+}
+
+.ChatDiv {
+    display: flex;
+    flex-direction: row;
+    height: 100%;
+}
+
+.ChatSectionHeader {
+    width: 100%;
+    height: 32px;
+    align-content: center;
+    text-align: center;
+
+    flex-shrink: 0;
+
+    color: rgb(210, 215, 220);
+    background-color: rgb(50, 65, 75);
+
+    border-radius: 4px;
+    border-width: 0px;
+    border-style: solid;
+}
+
+.ChatList {
+    width: 160px;
+    height: 100%;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    flex-shrink: 0;
+    row-gap: 3px;
+
+    background-color: rgb(30, 35, 40);
+}
+
+.ChatListing {
+    text-align: center;
+    width: calc(100% - 6px);
+    height: 40px;
+
+    padding: 0px 3px;
+}
+
+.ChatListing button {
+    width: 100%;
+    height: 100%;
+
+    background-color: rgb(35, 45, 50);
+    border-radius: 10px;
+    border-width: 1px;
+    border-style: solid;
+    border-color: rgb(40, 50, 60);
+}
+
+.ChatListing button:hover {
+    background-color: rgb(40, 50, 60);
+    border-color: rgb(50, 60, 70);
+}
+
+.CurrentChat {
+    background-color: rgb(50, 60, 70) !important;
+    border-color: rgb(50, 60, 70) !important;
+}
+
+.ChatWindow {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+
+    border-width: 0px 2px 0px 2px;
+    border-color: rgb(40, 50, 60);
+    border-style: solid;
+}
+
+.ChatWindowContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+
+    flex-shrink: 1;
+
+    height: 100%;
+    overflow: hidden;
+
+    margin-top: 8px;
+    margin-bottom: 24px;
+
+    margin-left: 24px;
+    margin-right: 24px;
+    
+    row-gap: 24px;
+}
+
+#chatLogContainer {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+}
+
+.ChatLog {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: auto;
+
+    width: 100%;
+    
+    row-gap: 6px;
+}
+
+.ChatMessage {
+    display: flex;
+    position: relative;
+    flex-direction: column;
+    align-self: flex-start;
+    width: 100%;
+    color: rgb(210, 215, 200);
+}
+
+.ChatMessageName {
+    font-weight: bold;
+    font-size: medium;
+}
+
+.ChatMessageContent {
+    font-size: medium;
+}
+
+.ChatMessage:hover {
+    background-color: #ffffff18;
+}
+
+.ChatMessage:hover .ChatMessageDropdown {
+    display: flex;
+}
+
+.ChatMessageDropdown {
+    display: none;
+    position: absolute;
+    flex-direction: row;
+
+    width: 96px;
+    height: 28px;
+
+    background-color: blueviolet;
+    z-index: 1;
+
+    left: calc(100% - 96px);
+    bottom: calc(100% - 8px);
+}
+
+.MessageContextMenu {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+
+    background-color: #C0C0C0;
+    border: 1px solid blue;
+    padding: 2px;
+    margin: 0;
+
+    z-index: 5;
+}
+
+#inputDiv {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: flex-start;
+    
+    flex-shrink: 0;
+    height: fit-content;
+    width: 100%;
+
+    column-gap: 12px;
+}
+
+#chatMessageInput {
+    width: 100%;
+    height: 30px;
+}
+
+#chatMessageButton {
+    width: 80px;
+    height: 100%;
+}
+
+.ChatMembersList {
+    width: 160px;
+    height: 100%;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    flex-shrink: 0;
+
+    background-color: rgb(30, 35, 40);
+}
+
+.ChatMembersListing {
+    position: relative;
+    text-align: center;
+    width: 100%;
+    height: 36px;
+}
+
+.ChatMembersListing button {
+    width: 100%;
+    height: 100%;
+}
+
+.UserListDropdown {
+    position: absolute;
+    flex-direction: column;
+    width: 192px;
+    height: fit-content;
+    background-color: rgb(113, 99, 126);
+    z-index: 1;
+
+    top: 0px;
+    left: -192px;
+
+    border-radius: 8px;
+}
+
+.MiniBioContent {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    padding: 16px;
+    row-gap: 8px;
+}
+
+.MiniBioNames {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.MiniBioNames p {
+    margin: 0px;
+}
+
+.MiniBioNames p:first-child {
+    font-size: 1.1em;
+}
+
+.MiniBioDivider {
+    width: 100%;
+    margin: 4px 0px 4px 0px;
+
+    border-width: 0px 0px 1px 0px;
+    border-style: ridge;
+    border-color: aliceblue;
+}
+
+.MiniBioButtons {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    row-gap: 8px;
+}
+
+.MiniBioButtons button {
+    width: 100%;
+    height: 28px;
+
+    border-radius: 8px;
+    border-width: 1px;
+    border-color: #ffffff38;
+    border-style: solid;
+}
+
+.PHCircle {
+    width: 96px;
+    height: 96px;
+    border-radius: 48px;
+    background-color: grey;
+}
+
+
+
+.DiscoveryWindow {
+    display: flex;
+    height: 100%;
+    flex-direction: column;
+}
+
+.DiscoveryTopContainer {
+    display: flex;
+    flex-direction: column;
+
+    padding: 20px;
+    background-color: rgb(30, 35, 40);
+    border: solid rgb(50, 65, 75);
+    border-width: 0px 0px 2px 0px;
+}
+
+.DiscoveryTopDesc {
+    text-align: center;
+    font-size: large;
+
+    margin-bottom: 16px;
+}
+
+.DiscoveryTopContent {
+    display: flex;
+    flex-direction: row;
+
+    justify-content: space-evenly;
+}
+
+.DiscoveryCreateContainer {
+    display: flex;
+    flex-direction: column;
+
+    min-width: 400px;
+    width: 28%;
+
+    padding: 16px;
+    background-color: rgb(40, 50, 55);
+
+    border: 1px solid rgb(50, 65, 75);
+    border-radius: 8px;
+
+    row-gap: 8px;
+}
+
+.DiscoveryCreateContainer span {
+    text-align: center;
+    font-size: 1.08em;
+}
+
+.DiscoveryCreateContainer button {
+    height: 32px;
+
+    margin-top: 8px;
+
+    background-color: rgb(215, 215, 215);
+
+    border-radius: 8px;
+    border-style: none;
+}
+
+.DiscoveryCreateContainer button:hover {
+    background-color: rgb(180, 180, 180);
+}
+
+.DiscoveryForm {
+    display: flex;
+    flex-direction: column;
+    margin-top: 12px;
+    height: 100%;
+    justify-content: space-between;
+}
+
+.DiscoveryFormText {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.DiscoveryFormPair {
+    display: flex;
+    flex-direction: row;
+    align-items:  center;
+    column-gap: 8px;
+    margin-bottom: 12px;
+}
+
+.DiscoveryFormPair label {
+    flex-shrink: 0;
+    width: 150px;
+}
+
+.DiscoveryFormPair input {
+    width: 100%;
+}
+
+.DiscoveryFormCheck {
+    display: flex;
+    flex-direction: row;
+
+    align-self: flex-end;
+}
+
+.DiscoveryPreGrid {
+    text-align: center;
+    font-size: 1.08em;
+
+    margin-top: 12px;
+    margin-bottom: 12px;
+}
+
+.DiscoveryGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 0.2fr));
+    grid-auto-rows: 144px;
+    margin: 8px 24px;
+    gap: 16px;
+}
+
+.DiscoveryShowcaseBox {
+    display: flex;
+    flex-direction: column;
+
+    width: 100%;
+
+    justify-content: center;
+    align-items: center;
+
+    color: rgb(210, 215, 220);
+    font-size: 1.08em;
+
+    background-color: rgb(40, 50, 55);
+    border: 1px solid rgb(50, 65, 75);
+    border-radius: 4px;
+
+    row-gap: 16px;
+}
+
+.DiscoveryShowcaseBox button {
+    height: 32px;
+    width: 50%;
+
+    background-color: rgb(215, 215, 215);
+    border-radius: 8px;
+    border-style: none;
+}
+
+.DiscoveryShowcaseBox button:hover {
+    background-color: rgb(180, 180, 180);
+}
+
+
+
+.SettingsWindow {
+    height: 100%;
+    overflow: hidden;
+}
+
+.SettingsFrame {
+    display: flex;
+    flex-direction: column;
+
+    width: 512px;
+    padding: 48px 40px 48px 56px;
+
+    max-height: calc(100% - 240px);
+    overflow-x: hidden;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+    scrollbar-gutter: stable;
+
+    background-color: rgb(30, 35, 40);
+    border-radius: 12px;
+    border-color: rgb(40, 50, 55);
+    border-style: solid;
+    border-width: 2px;
+
+    position: absolute;
+    top: calc(48px + 38px);
+    left: calc(50% + 32px);
+    margin-right: -50%;
+    transform: translate(-50%);
+    
+    align-items: center;
+
+    margin-left: auto;
+    margin-right: auto;
+
+    row-gap: 16px;
+}
+
+.SettingsUserField {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+
+    width: 100%;
+
+    padding: 16px;
+
+    color: rgb(210, 215, 220);
+    background-color: rgb(40, 50, 55);
+
+    border-radius: 8px;
+    border-color: transparent;
+    border-style: solid;
+    border-width: 0px;
+
+    overflow: hidden;
+}
+
+.SettingsUserFieldCover {
+    display: flex;
+    flex-direction: row;
+
+    align-items: center;
+    justify-content: space-between;
+}
+
+.SettingsUserFieldLeft {
+    display: flex;
+    flex-direction: column;
+}
+
+.SettingsUserFieldRight {
+
+}
+
+.SettingsUserFieldInput {
+    display: flex;
+    flex-direction: column;
+
+    margin-top: 16px;
+    margin-bottom: 16px;
+
+    padding-left: 32px;
+    padding-right: 32px;
+}
+
+.SettingsUserFieldInputContent {
+    display: flex;
+    flex-direction: column;
+
+    padding-bottom: 16px;
+}
+
+.SettingsUserFieldInputContent input {
+    margin-top: 4px;
+}
+
+.SettingsUserFieldInputButtons {
+    display: flex;
+    flex-direction: row;
+
+    margin-top: 8px;
+    justify-content: space-around;
+    column-gap: 8px;
+}
+
+.SettingsFieldCoverHeader {
+    font-weight: bold;
+    font-size: 1em;
+    margin: 0px;
+}
+
+.SettingsFieldCoverValue {
+    font-size: 1em;
+    margin: 0px;
+}
+
+.SettingsButton {
+    width: 64px;
+    height: 32px;
+
+    background-color: rgb(215, 215, 215);
+
+    border-radius: 8px;
+    border-style: none;
+}
+
+.SettingsButton:hover {
+    background-color: rgb(180, 180, 180);
+}
+
+.SettingsApplyButton {
+    width: 50%;
+    height: 40px;
+
+    border-radius: 10px;
+    border-width: 1px;
+    border-color: #ffffff38;
+    border-style: solid;
+}
+
+.BtnCancel {
+    background-color: rgb(215, 215, 215);
+}
+
+.BtnCancel:hover {
+    background-color: rgb(180, 180, 180);
+}
+
+.BtnWarn {
+    background-color: rgb(225, 0, 0);
+}
+
+.BtnWarn:hover {
+    background-color: rgb(190, 0, 0);
+}
+
+.BtnConfirm {
+    background-color: rgb(0, 128, 0);
+}
+
+.BtnConfirm:hover {
+    background-color: rgb(0, 160, 0);
+}
+
+.LightText {
+    color: rgb(210, 215, 220);
+}
+
+
+.Hidden {
+    display: none;
+}
+
+.Removed {
+    font-style: italic;
+}
