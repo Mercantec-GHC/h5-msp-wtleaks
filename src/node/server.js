@@ -280,6 +280,7 @@ async function OnSocketTryRegister(socket, username, displayname, password) {
     catch (error) {
         console.error(error.message);
         callback.status = "NOK";
+        callback.payload = {};
         callback.payload.message = "Unknown error";
     }
 
@@ -324,6 +325,8 @@ async function OnSocketGetOwnInfo(socket) {
     catch (error) {
         console.error(error.message);
         callback.status = "NOK";
+        callback.payload = {};
+        callback.payload.message = "Serverfejl, prøv igen senere";
     }
 
     return callback;

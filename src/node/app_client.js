@@ -152,7 +152,12 @@ async function GetOwnInfo() {
         settingsUserName.innerText = thisUser.UserName;
     }
     else {
-        alert("Fejl");
+        if (callback.payload.message) {
+            alert(callback.payload.message);
+        }
+        else {
+            alert("Fejl");
+        }
     }
 }
 
@@ -577,7 +582,7 @@ function OnReceiveDiscovery(rooms) {
     discoveryRoomsIDs = [];
     UpdateFilterMemberRooms();
 
-    console.log(rooms);
+    //console.log(rooms);
 
     for (let i = 0; i < rooms.length; i++) {
         discoveryRoomsIDs.push(rooms[i].id);

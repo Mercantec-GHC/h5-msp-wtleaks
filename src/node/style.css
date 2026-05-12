@@ -9,6 +9,26 @@ body {
     height: 100%;
 }
 
+.ContentDiv {
+    width: 100%;
+    height: 100%;
+    background-color: rgb(25, 30, 35);
+}
+
+input[type=text] {
+    border: 0px none transparent;
+    border-radius: 8px;
+
+    padding: 8px;
+}
+
+input[type=password] {
+    border: 0px none transparent;
+    border-radius: 8px;
+
+    padding: 8px;
+}
+
 /* Login */
 
 .CentreDiv {
@@ -29,24 +49,57 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
 
-    width: 600px;
-    padding: 20px;
+    width: 320px;
+    height: 320px;
+    padding: 48px 72px;
+
+    background-color: rgb(30, 35, 40);
+    border-radius: 12px;
+    border-color: rgb(40, 50, 55);
+    border-style: solid;
+    border-width: 2px;
 }
 
 .FormPair {
     display: flex;
     flex-direction: column;
+
+    width: 100%;
     text-align: left;
+    margin-bottom: 12px;
+}
+
+.FormPair input {
+    margin-top: 4px;
+}
+
+.FormButton {
+    height: 40px;
+    width: 100%;
+
+    flex-shrink: 0;
+
+    margin-top: 36px;
+    margin-bottom: 8px;
+
+    background-color: rgb(215, 215, 215);
+    border-radius: 8px;
+    border-style: none;
+}
+
+.FormButton:hover {
+    background-color: rgb(180, 180, 180);
 }
 
 .RegisterSpan {
     color: dodgerblue;
 }
 
-.RegisterSpan :hover {
-    cursor: pointer;
-    text-decoration: underline;
+.RegisterSpan:hover {
+    cursor: pointer !important;
+    text-decoration: underline !important;
 }
 
 
@@ -106,12 +159,6 @@ body {
 .SideBar button i {
     font-size: 36px;
     line-height: normal;
-}
-
-.ContentDiv {
-    width: 100%;
-    height: 100%;
-    background-color: rgb(25, 30, 35);
 }
 
 .ChatDiv {
@@ -258,8 +305,10 @@ body {
     display: none;
     position: absolute;
     flex-direction: row;
+
     width: 96px;
     height: 28px;
+
     background-color: blueviolet;
     z-index: 1;
 
@@ -271,10 +320,12 @@ body {
     display: flex;
     flex-direction: column;
     position: absolute;
+
     background-color: #C0C0C0;
     border: 1px solid blue;
     padding: 2px;
     margin: 0;
+
     z-index: 5;
 }
 
@@ -406,11 +457,24 @@ body {
     flex-direction: column;
 }
 
-.DiscoveryTop {
-    text-align: center;
+.DiscoveryTopContainer {
+    display: flex;
+    flex-direction: column;
+
+    padding: 20px;
+    background-color: rgb(30, 35, 40);
+    border: solid rgb(50, 65, 75);
+    border-width: 0px 0px 2px 0px;
 }
 
-.DiscoveryTopContainer {
+.DiscoveryTopDesc {
+    text-align: center;
+    font-size: large;
+
+    margin-bottom: 16px;
+}
+
+.DiscoveryTopContent {
     display: flex;
     flex-direction: row;
 
@@ -420,50 +484,125 @@ body {
 .DiscoveryCreateContainer {
     display: flex;
     flex-direction: column;
+
+    min-width: 400px;
+    width: 28%;
+
+    padding: 16px;
+    background-color: rgb(40, 50, 55);
+
+    border: 1px solid rgb(50, 65, 75);
+    border-radius: 8px;
+
+    row-gap: 8px;
+}
+
+.DiscoveryCreateContainer span {
+    text-align: center;
+    font-size: 1.08em;
+}
+
+.DiscoveryCreateContainer button {
+    height: 32px;
+
+    margin-top: 8px;
+
+    background-color: rgb(215, 215, 215);
+
+    border-radius: 8px;
+    border-style: none;
+}
+
+.DiscoveryCreateContainer button:hover {
+    background-color: rgb(180, 180, 180);
 }
 
 .DiscoveryForm {
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
+    margin-top: 12px;
+    height: 100%;
+    justify-content: space-between;
 }
 
 .DiscoveryFormText {
     display: flex;
     flex-direction: column;
+    width: 100%;
 }
 
-.DiscoveryFormText div {
+.DiscoveryFormPair {
     display: flex;
     flex-direction: row;
+    align-items:  center;
+    column-gap: 8px;
+    margin-bottom: 12px;
+}
+
+.DiscoveryFormPair label {
+    flex-shrink: 0;
+    width: 150px;
+}
+
+.DiscoveryFormPair input {
+    width: 100%;
 }
 
 .DiscoveryFormCheck {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+
+    align-self: flex-end;
 }
 
-.DiscoveryFormCheck div {
-    display: flex;
-    flex-direction: row;
+.DiscoveryPreGrid {
+    text-align: center;
+    font-size: 1.08em;
+
+    margin-top: 12px;
+    margin-bottom: 12px;
 }
 
 .DiscoveryGrid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 0.2fr));
     grid-auto-rows: 144px;
-    margin: 20px;
+    margin: 8px 24px;
     gap: 16px;
 }
 
 .DiscoveryShowcaseBox {
-    width: 100%;
     display: flex;
     flex-direction: column;
+
+    width: 100%;
+
     justify-content: center;
     align-items: center;
 
-    background-color: antiquewhite;
+    color: rgb(210, 215, 220);
+    font-size: 1.08em;
+
+    background-color: rgb(40, 50, 55);
+    border: 1px solid rgb(50, 65, 75);
+    border-radius: 4px;
+
+    row-gap: 16px;
 }
+
+.DiscoveryShowcaseBox button {
+    height: 32px;
+    width: 50%;
+
+    background-color: rgb(215, 215, 215);
+    border-radius: 8px;
+    border-style: none;
+}
+
+.DiscoveryShowcaseBox button:hover {
+    background-color: rgb(180, 180, 180);
+}
+
 
 
 .SettingsWindow {
@@ -559,10 +698,15 @@ body {
     padding-bottom: 16px;
 }
 
+.SettingsUserFieldInputContent input {
+    margin-top: 4px;
+}
+
 .SettingsUserFieldInputButtons {
     display: flex;
     flex-direction: row;
 
+    margin-top: 8px;
     justify-content: space-around;
     column-gap: 8px;
 }

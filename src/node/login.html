@@ -8,44 +8,46 @@
         <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
     </head>
     <body>
-        <div id="loginDiv" class="CentreDiv">
-            <div id="loginForm" class="LoginContainer">
-                <div class="FormPair">
-                    <label for="loginUsername">Brugernavn</label>
-                    <input id="loginUsername" type="text">
+        <div class="ContentDiv">
+            <div id="loginDiv" class="CentreDiv LightText">
+                <div id="loginForm" class="LoginContainer">
+                    <div class="FormPair">
+                        <label for="loginUsername">Brugernavn</label>
+                        <input id="loginUsername" type="text">
+                    </div>
+                    <div class="FormPair">
+                        <label for="loginPassword">Adgangskode</label>
+                        <input id="loginPassword" type="password">
+                    </div>
+                    <button class="FormButton" onclick="TryLogInRequest()">Log ind</button>
+                    <div>
+                        <span>Har du ikke en bruger? </span>
+                        <span class="RegisterSpan" onclick="SwapForms()">Opret ny bruger</span>
+                    </div>
                 </div>
-                <div class="FormPair">
-                    <label for="loginPassword">Adgangskode</label>
-                    <input id="loginPassword" type="password">
-                </div>
-                <button class="FormButton" onclick="TryLogInRequest()">Log ind</button>
-                <div>
-                    <span>Har du ikke en bruger? </span>
-                    <span class="RegisterSpan" onclick="SwapForms()">Opret ny bruger</span>
-                </div>
-            </div>
 
-            <div id="registerForm" class="LoginContainer Hidden">
-                <div class="FormPair">
-                    <label for="registerUsername">Brugernavn</label>
-                    <input id="registerUsername" type="text">
+                <div id="registerForm" class="LoginContainer Hidden">
+                    <div class="FormPair">
+                        <label for="registerUsername">Brugernavn</label>
+                        <input id="registerUsername" type="text">
+                    </div>
+                    <div class="FormPair">
+                        <label for="registerDisplayname">Synligt navn</label>
+                        <input id="registerDisplayname" type="text">
+                    </div>
+                    <div class="FormPair">
+                        <label for="registerPassword">Adgangskode</label>
+                        <input id="registerPassword" type="password">
+                    </div>
+                    <button class="FormButton" onclick="TryRegister()">Opret ny bruger</button>
+                    <div>
+                        <span>Har du allerede en bruger? </span>
+                        <span class="RegisterSpan" onclick="SwapForms()">Log ind</span>
+                    </div>
                 </div>
-                <div class="FormPair">
-                    <label for="registerDisplayname">Synligt navn</label>
-                    <input id="registerDisplayname" type="text">
-                </div>
-                <div class="FormPair">
-                    <label for="registerPassword">Adgangskode</label>
-                    <input id="registerPassword" type="password">
-                </div>
-                <button class="FormButton" onclick="TryRegister()">Opret ny bruger</button>
-                <div>
-                    <span>Har du allerede en bruger? </span>
-                    <span class="RegisterSpan" onclick="SwapForms()">Log ind</span>
-                </div>
-            </div>
 
-            <button class="FormButton" onclick="TryLogInRefresh()">Refresh</button>
+                <!-- <button class="FormButton" onclick="TryLogInRefresh()">Refresh</button> -->
+            </div>
         </div>
     </body>
 </html>
