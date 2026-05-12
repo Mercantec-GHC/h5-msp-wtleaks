@@ -25,4 +25,7 @@ class UpdateRequest(BaseModel):
     username: str | None = None
     display_name: str | None = None
     current_password: str | None = None
-    new_password: str | None = None    
+    new_password: str | None = None
+
+class DisplayNameUpdate(BaseModel):
+    display_name: str    

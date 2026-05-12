@@ -1,10 +1,10 @@
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-
-from src.schemas import UpdateRequest, UserCreate, UserLogin
+from minio import Minio
+from src.schemas import UpdateRequest, UserCreate, UserLogin, DisplayNameUpdate
 from src.models import RefreshToken, User
 from api.deps import get_db
 from core.jwt import ALGORITHM, SECRET_KEY, create_refresh_token, get_current_user, hash_password, verify_password, create_access_token
@@ -12,6 +12,15 @@ from jose import jwt, JWTError
 
 # This file contains the authentication routes for user signup, login, token refresh, and logout.
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+from minio import Minio
+
+client = Minio(
+    "minio:9000",
+    access_key="admin",
+    secret_key="supersecretpassword",
+    secure=False
+)
 
 # The signup route allows new users to create an account by providing a username and code. It checks if the username already exists and hashes the code before saving the user to the database.
 @router.post("/signup")
@@ -175,9 +184,6 @@ def update_me(
         
         current_user.username = data.username
 
-    if data.display_name is not None:
-        current_user.display_name = data.display_name
-
     new_access = None
     new_refresh = None
 
@@ -223,4 +229,37 @@ def update_me(
         response["access_token"] = new_access
         response["refresh_token"] = new_refresh
 
-    return response 
+    return response
+
+@router.patch("/updateDisplay")
+def update_display_name(
+    data: DisplayNameUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    current_user.display_name = data.display_name
+    db.commit()
+    return {"status": "display name updated"} 
+
+@router.post("/upload-profile-picture")
+async def upload_profile_picture(
+    file: UploadFile = File(...)
+):
+    object_name = file.filename
+
+    contents = await file.read()
+
+    from io import BytesIO
+
+    client.put_object(
+        "profil",
+        object_name,
+        BytesIO(contents),
+        length=len(contents),
+        content_type=file.content_type
+    )
+
+    return {
+        "status": "uploaded",
+        "file": object_name
+    }
