@@ -123,7 +123,7 @@ io.on("connection", (socket) => {
     });
 
     socket.on("changeDisplayName", async (newName) => {
-        callback(await ChangeUserInfo(socket, newName));
+        callback(await ChangeUserDisplayName(socket, newName));
     });
 
     // App
@@ -157,6 +157,10 @@ io.on("connection", (socket) => {
 
     socket.on("chatMessageRoom", (userID, roomID, message) => {
         OnSocketSendMessage(socket, userID, roomID, message);
+    });
+
+    socket.on("leaveChatroom", async (userID, roomID, callback) => {
+        callback(await OnSocketLeaveChatroom(socket, userID, roomID));
     });
 
     socket.on("deleteMessage", (roomID, messageID) => {
@@ -332,17 +336,8 @@ async function OnSocketGetOwnInfo(socket) {
     return callback;
 }
 
-
-async function ChangeUserInfo(req) {
-    const reqJSON = req.body;
-    const cookies = req.cookies;
-
-    /*
-    console.log("Username: " + reqJSON.username);
-    console.log("Display Name: " + reqJSON.display_name);
-    console.log("Current Password: " + reqJSON.current_password);
-    console.log("New Password: " + reqJSON.new_password);
-    */
+async function ChangeUserDisplayName(socket, newName) {
+    const cookies = parse(socket.handshake.headers.cookie);
 
     const requestOptions = {
         method: "PATCH",
@@ -351,10 +346,39 @@ async function ChangeUserInfo(req) {
             "Authorization": "Bearer " + cookies.access_token
         },
         body: JSON.stringify({
-            //username: reqJSON.username,
-            display_name: reqJSON.display_name,
-            //current_password: reqJSON.current_password,
-            //new_password: reqJSON.new_password
+            display_name: newName
+        })
+    };
+
+    let callback = Object.create(null);
+
+    try {
+        const response = await fetch(String(process.env.API_URL) + "/auth/updateDisplay", requestOptions);
+
+        callback.status = response.ok ? "OK" : "NOK";
+    }
+    catch (error) {
+        console.error(error);
+        callback.status = "NOK";
+    }
+
+    return callback;
+}
+
+async function ChangeUserInfo(req) {
+    const reqJSON = req.body;
+    const cookies = req.cookies;
+
+    const requestOptions = {
+        method: "PATCH",
+        headers: {
+            "Content-type": "application/json",
+            "Authorization": "Bearer " + cookies.access_token
+        },
+        body: JSON.stringify({
+            username: reqJSON.username,
+            current_password: reqJSON.current_password,
+            new_password: reqJSON.new_password
         })
     };
 
@@ -493,6 +517,55 @@ async function OnSocketKickUser(socket, roomID, userID) {
     }
 }
 
+async function OnSocketLeaveChatroom(socket, userID, roomID) {
+    const cookies = parse(socket.handshake.headers.cookie);
+
+    const requestOptions = {
+        method: "POST",
+        headers: {
+            "Authorization": "Bearer " + cookies.access_token
+        }
+    };
+
+    let callback = Object.create(null);
+
+    try {
+        const response = await fetch(String(process.env.API_URL) + "/rooms/" + roomID + "/leave", requestOptions);
+
+        console.log(response);
+
+        const json = await response.json();
+
+        callback.status = response.ok ? "OK" : "NOK";
+        callback.payload = json;
+
+        if (response.ok) {
+            const sockets = await io.fetchSockets();
+            const leavingSocket = sockets.find(s => s.userID === userID);
+
+            if (leavingSocket !== undefined) {
+                if (leavingSocket.activeRoomID === roomID) {
+                    leavingSocket.leave(String(roomID));
+                    leavingSocket.activeRoomID = -1;
+                }
+
+                leavingSocket.emit("kickedFromRoom", roomID);
+            }
+
+            io.to(String(roomID)).emit("userLeft", userID);
+        }
+    }
+    catch (error) {
+        console.error(error);
+        callback.status = "NOK";
+        callback.payload = {};
+        callback.payload.detail = "Serverfejl";
+    }
+
+    return callback;
+}
+
+
 
 // ========== Discovery ==========
 
@@ -599,7 +672,19 @@ async function OnSocketDeleteMessage(socket, roomID, messageID) {
         if (response.ok) {
             const json = await response.json();
 
-            io.to(String(roomID)).emit("messageDeleted", messageID, "[deleted by user]");
+            let reasoning;
+
+            if (json.type === "user") {
+                reasoning = "[deleted by user]";
+            }
+            else if (json.type === "admin") {
+                reasoning = "[deleted by admin]";
+            }
+            else {
+                reasoning = "[deleted]";
+            }
+
+            io.to(String(roomID)).emit("messageDeleted", messageID, reasoning);
         }
     }
     catch (error) {

@@ -33,8 +33,21 @@ let thisUser = null;
 let knownExternalUsers = [];
 let cachedRoomIDs = [];
 
+const chatroomContextMenu = document.getElementById("chatroomContextMenu");
+const chatroomContextMenuName = document.getElementById("chatroomContextMenuName");
+const chatroomContextMenuCopyIDButton = document.getElementById("chatroomContextMenuCopyIDButton");
+const chatroomContextMenuLeaveButton = document.getElementById("chatroomContextMenuLeaveButton");
+let activeChatroomContextMenuID = -1;
+
 // ID på element i brugerliste hvor en dropdown er åben
-let activeUserDropdown = -1;
+const miniBio = document.getElementById("userMiniBio");
+const miniBioDN = document.getElementById("miniBioDN");
+const miniBioUN = document.getElementById("miniBioUN");
+const miniBioDivider = document.getElementById("miniBioDivider");
+const miniBioButtonsList = document.getElementById("miniBioButtonsList");
+let activeMiniBioID = -1;
+
+const extraMenuOffset = 3;
 
 let currentTab = "";
 let currentRoomID = -1;
@@ -105,9 +118,45 @@ function OnServerMessage(message) {
 
 // =============== Account ===============
 
-async function TryChangeUserInfo() {
+async function TryChangeDisplayName() {
     const input = document.getElementById("displayNameInput");
     const newName = input.value;
+
+    const callback = await socket.emitWithAck("changeDisplayName", newName);
+
+    if (callback.status === "OK") {
+        thisUser.DisplayName = newName;
+
+        const settingsDisplayName = document.getElementById("settingsDisplayName");
+        settingsDisplayName.innerText = thisUser.DisplayName;
+
+        alert("Navn opdateret!");
+    }
+    else {
+        alert("Fejl");
+    }
+}
+
+async function TryChangeUserInfo(type) {
+    if (!confirm("Er du sikker på, at du vil ændre din information? Ved ændring vil du blive logget ud, og skal indtaste dine nye oplysninger.")) {
+        return;
+    }
+
+    let newUN = "";
+    let curPW = "";
+    let newPW = "";
+    
+    if (type === "username") {
+        const unInput = document.getElementById("usernameInput");
+        newUN = unInput.value;
+    }
+    else if (type === "password") {
+        const cpwInput = document.getElementById("currentPasswordInput");
+        curPW = cpwInput.value;
+
+        const npwInput = document.getElementById("newPasswordInput");
+        newPW = npwInput.value;
+    }
 
     const requestOptions = {
         method: "PATCH",
@@ -115,10 +164,9 @@ async function TryChangeUserInfo() {
             "Content-type": "application/json"
         },
         body: JSON.stringify({
-            username: "",
-            display_name: newName,
-            current_password: "",
-            new_password: ""
+            username: newUN,
+            current_password: curPW,
+            new_password: newPW
         })
     };
 
@@ -179,7 +227,14 @@ function OnReceiveChatroomList(roomList) {
         button.classList.add("LightText");
         button.id = "crlid" + room.id;
         button.innerText = room.name;
+
         button.onclick = function () { socket.emit("tryEnterRoom", room.id) };
+        
+        button.addEventListener("contextmenu", function(event) {
+            event.preventDefault();
+            ToggleChatroomContextMenu(room.name, room.id);
+        }, false);
+        
         roomListing.appendChild(button);
 
         chatList.appendChild(roomListing);
@@ -198,6 +253,7 @@ function RedirectToChatroom(roomID) {
 // Selve chatrummet med beskeder, brugere, osv
 async function OnReceiveChatroom(room) {
     SetHighlightForCurrentChatroom(false);
+    ResetMiniBio();
 
     currentRoomID = room.id;
     currentRoom = room;
@@ -259,28 +315,12 @@ async function OnReceiveChatroom(room) {
             msg.classList.add("Removed");
         }
 
-        /*
-        let ddContext = document.createElement("button");
-
-        let ddcIcon = document.createElement("i");
-        ddcIcon.classList.add("material-icons");
-        ddcIcon.innerText = "menu";
-        ddContext.appendChild(ddcIcon);
-
-        dropdown.appendChild(ddContext);
-        */
-
-        /*
-        message.addEventListener("contextmenu", function(event) {
-            event.preventDefault();
-            GenerateMessageContextMenu(messages[i]);
-        }, false);
-        */
-
         chatLog.appendChild(message);
     }
 
     chatLogContainer.appendChild(chatLog);
+
+    chatLog.lastChild.scrollIntoView({ behavior: "instant", block: "end" })
 
     BuildChatroomUserList(room.members);
 }
@@ -292,6 +332,9 @@ function AppendMessageHoverMenu(messageElement, messageID, senderID) {
         dropdown.classList.add("ChatMessageDropdown");
 
         const ddDelete = document.createElement("button");
+        ddDelete.classList.add("ChatMessageDropdownButton");
+        ddDelete.classList.add("ChatMessageDropdownButtonDelete");
+
         ddDelete.onclick = function () {
             DeleteMessage(currentRoomID, messageID);
         };
@@ -327,107 +370,105 @@ function BuildChatroomUserList(users) {
     ClearElementOfChildrenExceptFirst("chatMembersList");
 
     for (let i = 0; i < users.length; i++) {
-        AddUserToChatroomList(users[i]);
+        AddUserToChatroomUserList(users[i]);
     }
 }
 
 // Tilføjer en ny bruger til brugerlisten
-function AddUserToChatroomList(user) {
+function AddUserToChatroomUserList(user) {
     const userListing = document.createElement("div");
     userListing.id = "usrid" + user.id;
     userListing.classList.add("ChatMembersListing");
 
     const button = document.createElement("button");
-    button.innerText = user.display_name;
-    button.onclick = function () { ToggleChatroomUserBioSmall(user.id) };
+    button.classList.add("ChatMembersListingButton");
+
+    button.onclick = function () { ToggleMiniBio(user.id) };
+
+    button.addEventListener("contextmenu", function(event) {
+        event.preventDefault();
+        ToggleMiniBio(user.id)
+    }, false);
+
+    const userPicture = document.createElement("div");
+    userPicture.classList.add("PHCircleSmall");
+    button.appendChild(userPicture);
+
+    const userName = document.createElement("span");
+    userName.classList.add("LightText");
+    userName.innerText = user.display_name;
+    button.appendChild(userName);
+
     userListing.appendChild(button);
 
-    const bio = BuildMiniBio(user);
-    
-    userListing.appendChild(bio);
     chatMembersList.appendChild(userListing);
 }
 
-// Tilføjer minibiografien, der kan ses når man klikker på en bruger i brugerlisten
-function BuildMiniBio(user) {
-    // Ramme
-    const bio = document.createElement("div");
-    bio.classList.add("UserListDropdown");
-    bio.classList.add("Hidden");
-
-    // Indhold
-    const bioList = document.createElement("div");
-    bioList.classList.add("MiniBioContent");
-
-    // Billede
-    const bioPicture = document.createElement("div");
-    bioPicture.classList.add("PHCircle");
-    bioList.appendChild(bioPicture);
-
-    // Synligt navn + brugernavn
-    const bioNames = document.createElement("div");
-    bioNames.classList.add("MiniBioNames");
-    bioNames.classList.add("LightText");
-
-    const bioDisplayName = document.createElement("p");
-    bioDisplayName.innerText = user.display_name;
-    bioNames.appendChild(bioDisplayName);
-
-    const bioUserName = document.createElement("p");
-    bioUserName.innerText = "(" + user.username + ")";
-    bioNames.appendChild(bioUserName);
-
-    bioList.appendChild(bioNames);
-
-    // Skiller navne og knapper/menu
-    const bioDivider = document.createElement("div");
-    bioDivider.classList.add("MiniBioDivider");
-    bioList.appendChild(bioDivider);
-
-    // Holder på knapper
-    const bioButtons = document.createElement("div");
-    bioButtons.classList.add("MiniBioButtons");
-
-    if (currentRoom.owner_id === thisUser.ID && user.id !== thisUser.ID) {
-        const bioKick = document.createElement("button");
-        bioKick.classList.add("BtnWarn");
-        bioKick.innerText = "Kick";
-        bioKick.onclick = function () {
-            KickUser(currentRoomID, user.id);
-        };
-
-        bioButtons.appendChild(bioKick);
+// Når man klikker på en bruger i brugerlisten
+function ToggleMiniBio(userID) {
+    if (activeMiniBioID === userID) {
+        miniBio.classList.add("Hidden");
+        
+        activeMiniBioID = -1;
+        return;
     }
 
-    bioList.appendChild(bioButtons);
-
-    bio.appendChild(bioList);
-
-    return bio;
+    UpdateMiniBio(userID);
 }
 
-// Når man klikker på en bruger i brugerlisten
-function ToggleChatroomUserBioSmall(userID) {
-    if (activeUserDropdown === userID) {
-        const element = document.getElementById("usrid" + userID);
-        element.children[1].classList.add("Hidden");
+function UpdateMiniBio(userID) {
+    const parentElement = document.getElementById("usrid" + userID);
+    const rect = parentElement.getBoundingClientRect();
 
-        activeUserDropdown = -1;
+    miniBio.style.top = rect.top + "px";
+    miniBio.style.left = (rect.left - (194 + extraMenuOffset)) + "px";
+
+    ClearElementOfChildren("miniBioButtonsList");
+
+    const relevantUser = currentRoom.members.find(u => u.id === userID);
+
+    if (relevantUser !== undefined) {
+        miniBioDN.innerText = relevantUser.display_name;
+        miniBioUN.innerText = "(" + relevantUser.username + ")";
+
+        if (currentRoom.owner_id === thisUser.ID && userID !== thisUser.ID) {
+            const bioKick = document.createElement("button");
+            bioKick.classList.add("BtnWarn");
+            bioKick.innerText = "Kick";
+            bioKick.onclick = function () {
+                KickUser(currentRoomID, userID);
+            };
+
+            miniBioButtonsList.appendChild(bioKick);
+        }
+
+        if (miniBioButtonsList.children.length === 0) {
+            miniBioDivider.classList.add("Hidden");
+            miniBioButtonsList.classList.add("Hidden");
+        }
+        else {
+            miniBioDivider.classList.remove("Hidden");
+            miniBioButtonsList.classList.remove("Hidden");
+        }
+
+        activeMiniBioID = userID;
+        miniBio.classList.remove("Hidden");
     }
-    else if (activeUserDropdown !== -1) {
-        const oldElement = document.getElementById("usrid" + activeUserDropdown);
-        oldElement.children[1].classList.add("Hidden");
+}
 
-        const element = document.getElementById("usrid" + userID);
-        element.children[1].classList.remove("Hidden");
+// Når man vil forsøge at forlade et chatrum
+async function LeaveChatroom(roomID) {
+    if (!confirm("Er du sikker på, at du vil forlade dette chatrum?")) {
+        return;
+    }
 
-        activeUserDropdown = userID;
+    const callback = await socket.emitWithAck("leaveChatroom", thisUser.ID, roomID);
+
+    if (callback.status === "OK") {
+        ResetChatroomContextMenu();
     }
     else {
-        const element = document.getElementById("usrid" + userID);
-        element.children[1].classList.remove("Hidden");
-
-        activeUserDropdown = userID;
+        alert(callback.payload.detail);
     }
 }
 
@@ -437,6 +478,7 @@ function KickUser(roomID, userID) {
 }
 
 // Når man er blevet fjernet fra et chatrum
+// På trods af navnet gælder dette også, når man selv forlader et chatrum
 function OnKickedFromRoom(roomID) {
     const index = cachedRoomIDs.indexOf(roomID);
 
@@ -472,6 +514,7 @@ function OnKickedFromRoom(roomID) {
 
 // =============== Messages ===============
 
+// Hvis tekstfeltet er i fokus, og man trykker enter, så sendes beskeden uden at man behøver at klikke på "Send"-knappen
 function OnKeyDownChatMessageInput(event) {
     if (event.key === "Enter") {
         event.preventDefault();
@@ -494,7 +537,6 @@ function OnNewMessageInChatroom(message) {
 
     const newMessage = document.createElement("div");
     newMessage.classList.add("ChatMessage");
-    //newMessage.setAttribute("msgid", String(message.id));
     newMessage.id = "msgid" + message.id;
 
     // Opret et lookup table til brugernavne, når brugeren deltager i et rum, og referér derefter dertil
@@ -513,7 +555,20 @@ function OnNewMessageInChatroom(message) {
 
     AppendMessageHoverMenu(newMessage, message.id, message.sender_id);
 
+    // Udregnes før elementet indsættes, så målet ikke flytter sig
+    const scrollPosition = chatLogContainer.scrollTop;
+    const scrollMax = chatLogContainer.scrollHeight - chatLogContainer.clientHeight;
+
     chatLog.appendChild(newMessage);
+
+    //console.log("Before:   Top: " + scrollPosition + "   Max: " + scrollMax);
+    //console.log("After:   Top: " + chatLogContainer.scrollTop + "   Max: " + (chatLogContainer.scrollHeight - chatLogContainer.clientHeight));
+    //console.log("Result: " + (scrollMax - scrollPosition));
+
+    // Hvis der tidligere var bladret til bund, så bladr til den nye bund
+    if ((scrollMax - scrollPosition) < 1) {
+        chatLog.lastChild.scrollIntoView({ behavior: "instant", block: "end" })
+    }
 }
 
 // Når det nuværende chatrum får et nyt medlem. Sørger for at vise det med det samme
@@ -542,22 +597,23 @@ function OnUserLeaveChatroom(userID) {
         element.parentElement.removeChild(element);
     }
 
-    if (activeUserDropdown === userID) {
-        activeUserDropdown = -1;
+    if (activeMiniBioID === userID) {
+        activeMiniBioID = -1;
     }
 }
 
 // Prøver at slette en besked
 function DeleteMessage(roomID, messageID) {
-    if (confirm("Er du sikker på, at du vil slette denne besked?") === true) {
-        socket.emit("deleteMessage", roomID, messageID);
+    if (!confirm("Er du sikker på, at du vil slette denne besked?")) {
+        return;
     }
+
+    socket.emit("deleteMessage", roomID, messageID);
 }
 
 // Fjerner beskeden i det aktuelle chatrum
 function OnMessageDeleted(messageID, notice) {
     const mIndex = currentRoom.messages.findIndex(m => m.id === messageID);
-    console.log(mIndex);
 
     if (mIndex !== -1) {
         currentRoom.messages[mIndex].content = notice;
@@ -736,6 +792,8 @@ function ChangeActiveWindow(windowName) {
     }
     else if (String(currentTab) === "chat") {
         ClearElementOfChildrenExceptFirst("chatList");
+        ResetChatroomContextMenu();
+        ResetMiniBio();
     }
 
     currentTab = String(windowName);
@@ -815,6 +873,52 @@ function ToggleSettingsInput(name) {
     else {
         element.classList.add("Hidden");
     }
+}
+
+function ToggleChatroomContextMenu(roomName, roomID) {
+    if (activeChatroomContextMenuID === roomID) {
+        chatroomContextMenu.classList.add("Hidden");
+        
+        activeChatroomContextMenuID = -1;
+        return;
+    }
+
+    UpdateChatroomContextMenu(roomName, roomID);
+    activeChatroomContextMenuID = roomID;
+    chatroomContextMenu.classList.remove("Hidden");
+}
+
+function UpdateChatroomContextMenu(roomName, roomID) {
+    const parentElement = document.getElementById("crlid" + roomID);
+    const rect = parentElement.getBoundingClientRect();
+
+    chatroomContextMenu.style.top = rect.top + "px";
+    chatroomContextMenu.style.left = (rect.right + 5 + extraMenuOffset) + "px";
+
+    chatroomContextMenuName.innerText = roomName;
+
+    chatroomContextMenuCopyIDButton.onclick = async function () {
+        try {
+            await navigator.clipboard.writeText(roomID);
+        }
+        catch (error) {
+            console.error(error);
+        }
+    };
+
+    chatroomContextMenuLeaveButton.onclick = function () {
+        LeaveChatroom(roomID);
+    };
+}
+
+function ResetMiniBio() {
+    activeMiniBioID = -1;
+    miniBio.classList.add("Hidden");
+}
+
+function ResetChatroomContextMenu() {
+    activeChatroomContextMenuID = -1;
+    chatroomContextMenu.classList.add("Hidden");
 }
 
 // Fjerner alle de offentlige rum fra Discovery

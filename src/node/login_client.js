@@ -86,12 +86,12 @@ async function TryRegister() {
     try {
         const callback = await socket.emitWithAck("tryRegister", un, dn, pw);
 
-        if (callback.status !== "OK") {
-            alert(callback.payload.message);
-        }
-        else {
+        if (callback.status === "OK") {
             alert("Bruger oprettet!");
             SwapForms();
+        }
+        else {
+            alert(callback.payload.message);
         }
     }
     catch (error) {

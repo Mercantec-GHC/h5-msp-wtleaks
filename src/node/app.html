@@ -14,13 +14,13 @@
             </div>
             <div id="mainDiv" class="MainDiv">
                 <div id="sideBarDiv" class="SideBar">
-                    <button onclick="ChangeActiveWindow('chat')">
+                    <button class="BtnGrey" onclick="ChangeActiveWindow('chat')">
                         <i class="material-icons">chat</i>
                     </button>
-                    <button onclick="ChangeActiveWindow('rooms')">
+                    <button class="BtnGrey" onclick="ChangeActiveWindow('rooms')">
                         <i class="material-icons">diversity_3</i>
                     </button>
-                    <button onclick="ChangeActiveWindow('settings')">
+                    <button class="BtnGrey" onclick="ChangeActiveWindow('settings')">
                         <i class="material-icons">settings</i>
                     </button>
                 </div>
@@ -29,7 +29,7 @@
 
                     <div id="chatDiv" class="ChatDiv Hidden">
                         <div id="chatList" class="ChatList">
-                            <div class="ChatSectionHeader">
+                            <div class="ChatSectionHeader HeaderMargin">
                                 <span>Dine chatrum</span>
                             </div>
                         </div>
@@ -46,7 +46,7 @@
                             </div>
                         </div>
                         <div id="chatMembersList" class="ChatMembersList">
-                            <div class="ChatSectionHeader">
+                            <div class="ChatSectionHeader HeaderMarginExtra">
                                 <span>Medlemmer</span>
                             </div>
                         </div>
@@ -123,8 +123,8 @@
                                         <input id="displayNameInput" type="text">
                                     </div>
                                     <div class="SettingsUserFieldInputButtons">
-                                        <button class="SettingsApplyButton BtnCancel" onclick="ToggleSettingsInput('displayname')">Annullér</button>
-                                        <button class="SettingsApplyButton BtnConfirm" onclick="TryChangeUserInfo()">Opdater</button>
+                                        <button class="SettingsApplyButton BtnGrey" onclick="ToggleSettingsInput('displayname')">Annullér</button>
+                                        <button class="SettingsApplyButton BtnConfirm" onclick="TryChangeDisplayName()">Opdater</button>
                                     </div>
                                 </div>
                             </div>
@@ -145,8 +145,8 @@
                                         <input id="usernameInput" type="text">
                                     </div>
                                     <div class="SettingsUserFieldInputButtons">
-                                        <button class="SettingsApplyButton BtnCancel" onclick="ToggleSettingsInput('username')">Annullér</button>
-                                        <button class="SettingsApplyButton BtnConfirm">Opdater</button>
+                                        <button class="SettingsApplyButton BtnGrey" onclick="ToggleSettingsInput('username')">Annullér</button>
+                                        <button class="SettingsApplyButton BtnConfirm" onclick="TryChangeUserInfo('username')">Opdater</button>
                                     </div>
                                 </div>
                             </div>
@@ -169,13 +169,33 @@
                                         <input id="newPasswordInput" type="password">
                                     </div>
                                     <div class="SettingsUserFieldInputButtons">
-                                        <button class="SettingsApplyButton BtnCancel" onclick="ToggleSettingsInput('password')">Annullér</button>
-                                        <button class="SettingsApplyButton BtnConfirm">Opdater</button>
+                                        <button class="SettingsApplyButton BtnGrey" onclick="ToggleSettingsInput('password')">Annullér</button>
+                                        <button class="SettingsApplyButton BtnConfirm" onclick="TryChangeUserInfo('password')">Opdater</button>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+        <div id="userMiniBio" class="MiniBio Hidden">
+            <div class="MiniBioContent">
+                <div class="PHCircle"></div>
+                <div class="MiniBioNames LightText">
+                    <p id="miniBioDN"></p>
+                    <p id="miniBioUN"></p>
+                </div>
+                <div id="miniBioDivider" class="MiniBioDivider"></div>
+                <div id="miniBioButtonsList" class="MiniBioButtons"></div>
+            </div>
+        </div>
+        <div id="chatroomContextMenu" class="ChatroomContextMenu Hidden">
+            <div class="ChatroomContextMenuContent">
+                <span id="chatroomContextMenuName" class="LightText"></span>
+                <div class="ChatroomContextMenuButtonList">
+                    <button id="chatroomContextMenuCopyIDButton" class="BtnGrey">Kopier chatrum ID</button>
+                    <button id="chatroomContextMenuLeaveButton" class="BtnWarn">Forlad chatrum</button>
                 </div>
             </div>
         </div>
