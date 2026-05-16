@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from src.database import engine
 from src.models import Base
 
-from api.routes import auth, rooms, messages
+from api.routes import auth, rooms, messages, users
 from sockets.server import sio
 
 
@@ -31,7 +31,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(rooms.router)
 app.include_router(messages.router)
-
+app.include_router(users.router)
 
 # combine FastAPI and Socket.IO apps
 app = socketio.ASGIApp(
