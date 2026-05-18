@@ -122,7 +122,7 @@ io.on("connection", (socket) => {
         callback(await OnSocketClientLogOut(socket));
     });
 
-    socket.on("changeDisplayName", async (newName) => {
+    socket.on("changeDisplayName", async (newName, callback) => {
         callback(await ChangeUserDisplayName(socket, newName));
     });
 
