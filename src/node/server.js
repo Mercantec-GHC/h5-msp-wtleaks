@@ -293,12 +293,20 @@ async function OnSocketTryRegister(socket, username, displayname, password) {
 
 // Den første handling, en bruger foretager sig. Hvis de ikke er logget ind, sendes de til loginsiden. Hvis de er, får de noget offentlig data om sig selv, som de gemmer på
 async function OnSocketGetOwnInfo(socket) {
+    let cookies;
+
     if (!socket.handshake.headers.cookie) {
         socket.emit("goToLogin");
         return;
     }
 
-    const cookies = parse(socket.handshake.headers.cookie);
+    try {
+        cookies = parse(socket.handshake.headers.cookie);
+    }
+    catch (error) {
+        socket.emit("goToLogin");
+        return;
+    }
 
     const requestOptions = {
         method: "GET",
@@ -396,7 +404,15 @@ async function ChangeUserInfo(req) {
 
 // Når en bruger åbner chatvinduet. Sender en liste med de chatrum, brugeren er medlem af
 async function SendRoomListToSocket(socket) {
-    const cookies = parse(socket.handshake.headers.cookie);
+    let cookies;
+
+    try {
+        cookies = parse(socket.handshake.headers.cookie);
+    }
+    catch (error) {
+        socket.emit("goToLogin");
+        return;
+    }
 
     const requestOptions = {
         method: "GET",

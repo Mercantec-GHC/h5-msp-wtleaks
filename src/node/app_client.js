@@ -320,7 +320,9 @@ async function OnReceiveChatroom(room) {
 
     chatLogContainer.appendChild(chatLog);
 
-    chatLog.lastChild.scrollIntoView({ behavior: "instant", block: "end" })
+    if (chatLog.children.length > 0) {
+        chatLog.lastChild.scrollIntoView({ behavior: "instant", block: "end" })
+    }
 
     BuildChatroomUserList(room.members);
 }
