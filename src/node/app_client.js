@@ -24,19 +24,17 @@ const settingsDiv = document.getElementById("settingsDiv");
 
 const chatroomFormPrivateToggle = document.getElementById("createChatroomPrivateToggle");
 
+const discoveryFilterBtn = document.getElementById("discoveryFilterBtn");
+
 const settingsDisplayNameInput = document.getElementById("settingsDisplayNameInput");
+const settingsPictureInput = document.getElementById("settingsPictureInput");
 const settingsUserNameInput = document.getElementById("settingsUserNameInput");
 const settingsPasswordInput = document.getElementById("settingsPasswordInput");
-
-let thisUser = null;
-
-let knownExternalUsers = [];
-let cachedRoomIDs = [];
 
 const chatroomContextMenu = document.getElementById("chatroomContextMenu");
 const chatroomContextMenuName = document.getElementById("chatroomContextMenuName");
 const chatroomContextMenuCopyIDButton = document.getElementById("chatroomContextMenuCopyIDButton");
-const chatroomContextMenuLeaveButton = document.getElementById("chatroomContextMenuLeaveButton");
+const chatroomContextMenuContextButton = document.getElementById("chatroomContextMenuContextButton");
 let activeChatroomContextMenuID = -1;
 
 // ID på element i brugerliste hvor en dropdown er åben
@@ -48,6 +46,11 @@ const miniBioButtonsList = document.getElementById("miniBioButtonsList");
 let activeMiniBioID = -1;
 
 const extraMenuOffset = 3;
+
+let thisUser = null;
+
+let knownExternalUsers = [];
+let cachedRoomIDs = [];
 
 let currentTab = "";
 let currentRoomID = -1;
@@ -137,6 +140,31 @@ async function TryChangeDisplayName() {
     }
 }
 
+async function TryChangeProfilePicture() {
+    const input = document.getElementById("pictureInput");
+
+    if (input.files.length === 0) {
+        alert("Vælg et billede først!");
+        return;
+    }
+
+    const newPicture = input.files[0];
+
+    const callback = await socket.emitWithAck("changeProfilePicture", newPicture, newPicture.type);
+
+    if (callback.status === "OK") {
+        //thisUser.DisplayName = newName;
+
+        //const settingsDisplayName = document.getElementById("settingsDisplayName");
+        //settingsDisplayName.innerText = thisUser.DisplayName;
+
+        alert("Billede opdateret!");
+    }
+    else {
+        alert("Fejl");
+    }
+}
+
 async function TryChangeUserInfo(type) {
     if (!confirm("Er du sikker på, at du vil ændre din information? Ved ændring vil du blive logget ud, og skal indtaste dine nye oplysninger.")) {
         return;
@@ -209,6 +237,41 @@ async function GetOwnInfo() {
     }
 }
 
+async function TryLogOut() {
+    if (!confirm("Er du sikker på, at du vil logge ud?")) {
+        return;
+    }
+
+    const callback = await socket.emitWithAck("clientLogOut");
+
+    if (callback.status === "OK") {
+        alert("Logget ud!");
+        thisUser = null;
+    }
+    else {
+        alert(callback.payload.message);
+    }
+}
+
+async function TryDeleteUser() {
+    if (!confirm("Er du sikker på, at du vil slette din bruger?")) {
+        return;
+    }
+    if (!confirm("Er du helt sikker? Dette kan ikke fortrydes!")) {
+        return;
+    }
+
+    const callback = await socket.emitWithAck("deleteUser");
+
+    if (callback.status === "OK") {
+        alert("Bruger slettet!");
+        thisUser = null;
+    }
+    else {
+        alert("Fejl");
+    }
+}
+
 
 
 // =============== Chatroom ===============
@@ -232,7 +295,7 @@ function OnReceiveChatroomList(roomList) {
         
         button.addEventListener("contextmenu", function(event) {
             event.preventDefault();
-            ToggleChatroomContextMenu(room.name, room.id);
+            ToggleChatroomContextMenu(room.name, room.id, room.owner_id);
         }, false);
         
         roomListing.appendChild(button);
@@ -465,6 +528,25 @@ async function LeaveChatroom(roomID) {
     }
 
     const callback = await socket.emitWithAck("leaveChatroom", thisUser.ID, roomID);
+
+    if (callback.status === "OK") {
+        ResetChatroomContextMenu();
+    }
+    else {
+        alert(callback.payload.detail);
+    }
+}
+
+// Når man vil slette et chatrum
+async function DeleteChatroom(roomID) {
+    if (!confirm("Er du sikker på, at du vil slette dette chatrum?")) {
+        return;
+    }
+    if (!confirm("Er du helt sikker? Dette kan ikke fortrydes, og al historik går tabt!")) {
+        return;
+    }
+
+    const callback = await socket.emitWithAck("deleteChatroom", thisUser.ID, roomID);
 
     if (callback.status === "OK") {
         ResetChatroomContextMenu();
@@ -710,6 +792,10 @@ function TryJoinPrivateChatroom() {
     socket.emit("tryJoinRoom", thisUser.ID, roomID.value, password.value);
 }
 
+function ApplyDiscoveryFilter() {
+
+}
+
 
 
 // =============== Creating chatrooms ===============
@@ -857,6 +943,10 @@ function ToggleSettingsInput(name) {
             element = settingsDisplayNameInput;
             break;
 
+        case "picture":
+            element = settingsPictureInput;
+            break;
+
         case "username":
             element = settingsUserNameInput;
             break;
@@ -877,7 +967,7 @@ function ToggleSettingsInput(name) {
     }
 }
 
-function ToggleChatroomContextMenu(roomName, roomID) {
+function ToggleChatroomContextMenu(roomName, roomID, ownerID) {
     if (activeChatroomContextMenuID === roomID) {
         chatroomContextMenu.classList.add("Hidden");
         
@@ -885,12 +975,12 @@ function ToggleChatroomContextMenu(roomName, roomID) {
         return;
     }
 
-    UpdateChatroomContextMenu(roomName, roomID);
+    UpdateChatroomContextMenu(roomName, roomID, ownerID);
     activeChatroomContextMenuID = roomID;
     chatroomContextMenu.classList.remove("Hidden");
 }
 
-function UpdateChatroomContextMenu(roomName, roomID) {
+function UpdateChatroomContextMenu(roomName, roomID, ownerID) {
     const parentElement = document.getElementById("crlid" + roomID);
     const rect = parentElement.getBoundingClientRect();
 
@@ -908,9 +998,18 @@ function UpdateChatroomContextMenu(roomName, roomID) {
         }
     };
 
-    chatroomContextMenuLeaveButton.onclick = function () {
-        LeaveChatroom(roomID);
-    };
+    if (ownerID !== null && ownerID === thisUser.ID) {
+        chatroomContextMenuContextButton.innerText = "Slet chatrum";
+        chatroomContextMenuContextButton.onclick = function () {
+            DeleteChatroom(roomID);
+        };
+    }
+    else {
+        chatroomContextMenuContextButton.innerText = "Forlad chatrum";
+        chatroomContextMenuContextButton.onclick = function () {
+            LeaveChatroom(roomID);
+        };
+    }
 }
 
 function ResetMiniBio() {
@@ -921,6 +1020,23 @@ function ResetMiniBio() {
 function ResetChatroomContextMenu() {
     activeChatroomContextMenuID = -1;
     chatroomContextMenu.classList.add("Hidden");
+}
+
+function ResetLocalData() {
+    activeChatroomContextMenuID = -1;
+    activeMiniBioID = -1;
+
+    thisUser = null;
+
+    knownExternalUsers = [];
+    cachedRoomIDs = [];
+
+    currentTab = "";
+    currentRoomID = -1;
+    currentRoom = null;
+
+    discoveryRoomsIDs = [];
+    discoveryFilterMember = true;
 }
 
 // Fjerner alle de offentlige rum fra Discovery
