@@ -1,6 +1,7 @@
 from datetime import datetime
+import logging
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, FastAPI
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from minio import Minio
@@ -13,7 +14,14 @@ from jose import jwt, JWTError
 # This file contains the authentication routes for user signup, login, token refresh, and logout.
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+app = FastAPI(max_request_size=10 * 1024 * 1024)
 from minio import Minio
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s %(message)s",
+)
 
 client = Minio(
     "minio:9000",
@@ -32,6 +40,7 @@ def signup(user: UserCreate, db: Session = Depends(get_db)):
     # The new user is created with the provided username and a hashed version of the code. The role is set to "user" by default. After saving the user, it returns a success message.
     new_user = User(
         username=user.username,
+        display_name=user.display_name or user.username,
         hashed_code=hash_password(user.code),
         role="user"
     )
@@ -135,10 +144,19 @@ def delete_user(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    db.delete(current_user)
-    db.commit()
+    # create a unique anonymized username so unique constraints stay satisfied
+    anon = f"deleted_user_{current_user.id}_{int(datetime.utcnow().timestamp())}"
+    current_user.username = anon
+    current_user.display_name = "Deleted user"
+    current_user.hashed_code = None  # remove authentication secret
 
-    return {"status": "user deleted"}
+    # revoke or delete refresh tokens (keeps message rows intact)
+    db.query(RefreshToken).filter(RefreshToken.user_id == current_user.id).update(
+        {"revoked": True}
+    )
+
+    db.commit()
+    return {"status": "user anonymized"}
 
 @router.get("/me")
 def get_my_profile(
@@ -246,18 +264,33 @@ async def upload_profile_picture(
     file: UploadFile = File(...)
 ):
     object_name = file.filename
+    logger.info(
+        "upload_profile_picture called: filename=%s, content_type=%s",
+        object_name,
+        file.content_type,
+    )
 
     contents = await file.read()
+    logger.info("upload_profile_picture read file size=%d bytes", len(contents))
 
     from io import BytesIO
 
-    client.put_object(
-        "profil",
-        object_name,
-        BytesIO(contents),
-        length=len(contents),
-        content_type=file.content_type
-    )
+    try:
+        client.put_object(
+            "profil",
+            object_name,
+            BytesIO(contents),
+            length=len(contents),
+            content_type=file.content_type
+        )
+    except Exception as exc:
+        logger.exception(
+            "Failed to upload profile picture %s to MinIO",
+            object_name,
+        )
+        raise HTTPException(500, "Failed to upload profile picture") from exc
+
+    logger.info("upload_profile_picture successfully uploaded %s", object_name)
 
     return {
         "status": "uploaded",
