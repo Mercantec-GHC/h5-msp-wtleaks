@@ -148,12 +148,10 @@ def delete_user(
     anon = f"deleted_user_{current_user.id}_{int(datetime.utcnow().timestamp())}"
     current_user.username = anon
     current_user.display_name = "Deleted user"
-    current_user.hashed_code = None  # remove authentication secret
+    current_user.hashed_code = ""  # clear authentication secret
 
-    # revoke or delete refresh tokens (keeps message rows intact)
-    db.query(RefreshToken).filter(RefreshToken.user_id == current_user.id).update(
-        {"revoked": True}
-    )
+    # delete refresh tokens so the user can be anonymized safely
+    db.query(RefreshToken).filter(RefreshToken.user_id == current_user.id).delete()
 
     db.commit()
     return {"status": "user anonymized"}

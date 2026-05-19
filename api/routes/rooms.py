@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import text, exists
+import logging
 from api.deps import get_db
 from core.jwt import get_current_user, hash_password, verify_password
 from core.permissions import require_role
@@ -8,6 +9,8 @@ from src.schemas import RoomCreate, JoinRoomRequest
 from src.models import Room, User, user_room
 
 router = APIRouter(prefix="/rooms", tags=["rooms"])
+
+logger = logging.getLogger(__name__)
 
 
 @router.post("/")
@@ -142,6 +145,7 @@ def get_my_rooms(
         {
             "id": room.id,
             "name": room.name,
+            "owner_id": room.owner_id,
             "members": [
                 {
                     "id": user.id,
@@ -208,14 +212,34 @@ def leave_room(
     if not room:
         raise HTTPException(404, "Room not found")
 
-    if current_user not in room.users:
+    # Check membership using explicit query against the association table
+    member = db.execute(
+        text("SELECT 1 FROM user_room WHERE user_id = :u AND room_id = :r"),
+        {"u": current_user.id, "r": room_id}
+    ).first()
+
+    if not member:
         raise HTTPException(400, "You are not in this room")
 
     # Optional: prevent owner from leaving
     if room.owner_id == current_user.id:
         raise HTTPException(400, "Owner cannot leave their own room")
 
-    room.users.remove(current_user)
+    # Perform a safe delete on the association row
+    result = db.execute(
+        text("DELETE FROM user_room WHERE user_id = :u AND room_id = :r"),
+        {"u": current_user.id, "r": room_id}
+    )
+
+    # Log if nothing was deleted (can indicate concurrent modification)
+    try:
+        rowcount = result.rowcount
+    except Exception:
+        rowcount = None
+
+    if rowcount == 0:
+        logger.warning("leave_room: expected to remove 1 membership row but removed 0 (user=%s room=%s)", current_user.id, room_id)
+
     db.commit()
 
     return {"status": "left room"}

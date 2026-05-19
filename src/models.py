@@ -94,4 +94,4 @@ class RoomRole(Base):
     id = Column(Integer, primary_key=True)
     room_id = Column(Integer, ForeignKey("rooms.id", ondelete="CASCADE"))
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
-    role = Column(String, nullable=False)    
+    role = Column(String, nullable=False)   
