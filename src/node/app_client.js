@@ -12,6 +12,8 @@ class User {
     }
 }
 
+const extraMenuOffset = 3;
+
 const chatWindowHeaderSpan = document.getElementById("chatWindowHeaderSpan");
 const chatMembersList = document.getElementById("chatMembersList");
 const chatInput = document.getElementById("chatMessageInput");
@@ -35,7 +37,6 @@ const chatroomContextMenu = document.getElementById("chatroomContextMenu");
 const chatroomContextMenuName = document.getElementById("chatroomContextMenuName");
 const chatroomContextMenuCopyIDButton = document.getElementById("chatroomContextMenuCopyIDButton");
 const chatroomContextMenuContextButton = document.getElementById("chatroomContextMenuContextButton");
-let activeChatroomContextMenuID = -1;
 
 // ID på element i brugerliste hvor en dropdown er åben
 const miniBio = document.getElementById("userMiniBio");
@@ -43,9 +44,9 @@ const miniBioDN = document.getElementById("miniBioDN");
 const miniBioUN = document.getElementById("miniBioUN");
 const miniBioDivider = document.getElementById("miniBioDivider");
 const miniBioButtonsList = document.getElementById("miniBioButtonsList");
-let activeMiniBioID = -1;
 
-const extraMenuOffset = 3;
+let activeChatroomContextMenuID = -1;
+let activeMiniBioID = -1;
 
 let thisUser = null;
 
@@ -306,7 +307,7 @@ function OnReceiveChatroomList(roomList) {
     SetHighlightForCurrentChatroom(true);
 }
 
-// Åbner et chatrum
+// Åbner et nyt chatrum
 function RedirectToChatroom(roomID) {
     cachedRoomIDs.push(roomID);
     ChangeActiveWindow("chat");
@@ -348,8 +349,6 @@ async function OnReceiveChatroom(room) {
             userString = currentRoom.members[uIndex].display_name;
         }
         else {
-            // Den skriver arrayet, selv om det gerne skulle være tomt? fundet index er stadig -1, så lidt forvirret
-            //console.log(knownExternalUsers);
             const ueIndex = knownExternalUsers.findIndex(u => u.ID === messages[i].sender_id);
 
             if (ueIndex !== -1) {
@@ -721,8 +720,6 @@ function OnMessageDeleted(messageID, notice) {
 function OnReceiveDiscovery(rooms) {
     discoveryRoomsIDs = [];
     UpdateFilterMemberRooms();
-
-    //console.log(rooms);
 
     for (let i = 0; i < rooms.length; i++) {
         discoveryRoomsIDs.push(rooms[i].id);
