@@ -57,9 +57,7 @@ input[type=password] {
 
     background-color: rgb(30, 35, 40);
     border-radius: 12px;
-    border-color: rgb(40, 50, 55);
-    border-style: solid;
-    border-width: 2px;
+    border: 2px solid rgb(40, 50, 55);
 }
 
 .FormPair {
@@ -152,8 +150,9 @@ input[type=password] {
     width: 56px;
     height: 56px;
     border: 1px solid transparent;
-    background-color: lightgrey;
     border-radius: 28px;
+
+    cursor: pointer;
 }
 
 .SideBar button i {
@@ -181,6 +180,18 @@ input[type=password] {
     border-radius: 4px;
     border-width: 0px;
     border-style: solid;
+
+    position: sticky;
+    top: 0px;
+    z-index: 1;
+}
+
+.HeaderMargin {
+    margin-bottom: 3px;
+}
+
+.HeaderMarginExtra {
+    margin-bottom: 6px;
 }
 
 .ChatList {
@@ -190,6 +201,10 @@ input[type=password] {
     display: flex;
     flex-direction: column;
     align-items: center;
+
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-width: none;
 
     flex-shrink: 0;
     row-gap: 3px;
@@ -202,6 +217,8 @@ input[type=password] {
     width: calc(100% - 6px);
     height: 40px;
 
+    flex-shrink: 0;
+
     padding: 0px 3px;
 }
 
@@ -210,10 +227,11 @@ input[type=password] {
     height: 100%;
 
     background-color: rgb(35, 45, 50);
+
     border-radius: 10px;
-    border-width: 1px;
-    border-style: solid;
-    border-color: rgb(40, 50, 60);
+    border: 1px solid rgb(40, 50, 60);
+
+    cursor: pointer;
 }
 
 .ChatListing button:hover {
@@ -224,6 +242,50 @@ input[type=password] {
 .CurrentChat {
     background-color: rgb(50, 60, 70) !important;
     border-color: rgb(50, 60, 70) !important;
+}
+
+.ChatroomContextMenu {
+    position: fixed;
+    width: 192px;
+    height: fit-content;
+    background-color: rgb(50, 65, 75);
+    z-index: 5;
+    margin: 0;
+
+    border-radius: 8px;
+}
+
+.ChatroomContextMenuContent {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    padding: 16px;
+}
+
+.ChatroomContextMenuContent span {
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.ChatroomContextMenuButtonList {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    row-gap: 4px;
+
+    width: 100%;
+}
+
+.ChatroomContextMenuButtonList button {
+    width: 100%;
+    height: 28px;
+
+    border-radius: 8px;
+    border-width: 1px;
+    border-color: #ffffff38;
+    border-style: solid;
 }
 
 .ChatWindow {
@@ -244,6 +306,7 @@ input[type=password] {
     justify-content: space-between;
 
     flex-shrink: 1;
+    z-index: 0;
 
     height: 100%;
     overflow: hidden;
@@ -272,7 +335,7 @@ input[type=password] {
 
     width: 100%;
     
-    row-gap: 6px;
+    row-gap: 8px;
 }
 
 .ChatMessage {
@@ -291,6 +354,7 @@ input[type=password] {
 
 .ChatMessageContent {
     font-size: medium;
+    text-wrap: wrap;
 }
 
 .ChatMessage:hover {
@@ -305,15 +369,53 @@ input[type=password] {
     display: none;
     position: absolute;
     flex-direction: row;
+    align-items: center;
 
-    width: 96px;
-    height: 28px;
+    width: fit-content;
+    height: 24px;
+    padding: 3px;
+    border-radius: 15px;
 
-    background-color: blueviolet;
+    background-color: rgb(30, 35, 40);
+    border: 1px solid rgb(85, 110, 120);
+
     z-index: 1;
 
-    left: calc(100% - 96px);
-    bottom: calc(100% - 8px);
+    left: calc(100% - 12px);
+    bottom: calc(100% - 12px);
+    transform: translateX(-100%);
+}
+
+.ChatMessageDropdownButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 24px;
+    height: 24px;
+    border-radius: 12px;
+    
+    border: none;
+    padding: 0;
+
+    cursor: pointer;
+}
+
+.ChatMessageDropdownButton i {
+    font-size: 22px;
+    
+    color: white;
+    text-align: center;
+}
+
+
+
+.ChatMessageDropdownButtonDelete {
+    background-color: rgb(225, 0, 0);
+}
+
+.ChatMessageDropdownButtonDelete:hover {
+    background-color: rgb(190, 0, 0);
 }
 
 .MessageContextMenu {
@@ -353,12 +455,16 @@ input[type=password] {
 }
 
 .ChatMembersList {
-    width: 160px;
+    width: 192px;
     height: 100%;
 
     display: flex;
     flex-direction: column;
     align-items: center;
+
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-width: none;
 
     flex-shrink: 0;
 
@@ -368,27 +474,50 @@ input[type=password] {
 .ChatMembersListing {
     position: relative;
     text-align: center;
-    width: 100%;
+    width: calc(100% - 12px);
     height: 36px;
+
+    flex-shrink: 0;
+
+    padding: 2px 6px;
 }
 
-.ChatMembersListing button {
+.ChatMembersListingButton {
+    display: flex;
+    align-items: center;
+    column-gap: 8px;
+
+    overflow: hidden;
+
     width: 100%;
     height: 100%;
+
+    background-color: transparent;
+    border: 0px none transparent;
+    border-radius: 8px;
+
+    cursor: pointer;
 }
 
-.UserListDropdown {
-    position: absolute;
-    flex-direction: column;
+.ChatMembersListingButton:hover {
+    background-color: #ffffff18 !important;
+}
+
+.ChatMembersListingButton span {
+    text-wrap: nowrap;
+}
+
+.MiniBio {
+    position: fixed;
     width: 192px;
     height: fit-content;
-    background-color: rgb(113, 99, 126);
-    z-index: 1;
 
-    top: 0px;
-    left: -192px;
+    background-color: rgb(50, 65, 75);
 
+    margin: 0;
     border-radius: 8px;
+
+    z-index: 5;
 }
 
 .MiniBioContent {
@@ -409,6 +538,9 @@ input[type=password] {
 
 .MiniBioNames p {
     margin: 0px;
+    word-wrap: break-word;
+    text-wrap: wrap;
+    max-width: 160px;
 }
 
 .MiniBioNames p:first-child {
@@ -437,15 +569,20 @@ input[type=password] {
     height: 28px;
 
     border-radius: 8px;
-    border-width: 1px;
-    border-color: #ffffff38;
-    border-style: solid;
+    border: 1px solid #ffffff38;
 }
 
 .PHCircle {
     width: 96px;
     height: 96px;
     border-radius: 48px;
+    background-color: grey;
+}
+
+.PHCircleSmall {
+    width: 32px;
+    height: 32px;
+    border-radius: 16px;
     background-color: grey;
 }
 
@@ -556,11 +693,27 @@ input[type=password] {
 }
 
 .DiscoveryPreGrid {
+    display: flex;
+    flex-direction: column;
+
+    align-items: center;
+
     text-align: center;
     font-size: 1.08em;
-
+    
     margin-top: 12px;
     margin-bottom: 12px;
+
+    row-gap: 12px;
+}
+
+.DiscoveryPreGridDiv {
+    display: flex;
+    flex-direction: row;
+
+    align-items: center;
+
+    column-gap: 8px;
 }
 
 .DiscoveryGrid {
@@ -625,9 +778,7 @@ input[type=password] {
 
     background-color: rgb(30, 35, 40);
     border-radius: 12px;
-    border-color: rgb(40, 50, 55);
-    border-style: solid;
-    border-width: 2px;
+    border: 2px solid rgb(40, 50, 55);
 
     position: absolute;
     top: calc(48px + 38px);
@@ -656,9 +807,7 @@ input[type=password] {
     background-color: rgb(40, 50, 55);
 
     border-radius: 8px;
-    border-color: transparent;
-    border-style: solid;
-    border-width: 0px;
+    border: 0px none transparent;
 
     overflow: hidden;
 }
@@ -674,10 +823,6 @@ input[type=password] {
 .SettingsUserFieldLeft {
     display: flex;
     flex-direction: column;
-}
-
-.SettingsUserFieldRight {
-
 }
 
 .SettingsUserFieldInput {
@@ -741,16 +886,36 @@ input[type=password] {
     height: 40px;
 
     border-radius: 10px;
-    border-width: 1px;
-    border-color: #ffffff38;
-    border-style: solid;
+    border: 1px solid #ffffff38;
 }
 
-.BtnCancel {
+.SettingsEndButtonContainer {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+
+    align-items: center;
+
+    width: 100%;
+
+    margin-top: 32px;
+
+    row-gap: 16px;
+}
+
+.SettingsEndButton {
+    width: 50%;
+    height: 40px;
+
+    border-radius: 10px;
+    border: 1px solid #ffffff38;
+}
+
+.BtnGrey {
     background-color: rgb(215, 215, 215);
 }
 
-.BtnCancel:hover {
+.BtnGrey:hover {
     background-color: rgb(180, 180, 180);
 }
 
@@ -776,7 +941,7 @@ input[type=password] {
 
 
 .Hidden {
-    display: none;
+    display: none !important;
 }
 
 .Removed {

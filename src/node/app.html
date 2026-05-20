@@ -14,13 +14,13 @@
             </div>
             <div id="mainDiv" class="MainDiv">
                 <div id="sideBarDiv" class="SideBar">
-                    <button onclick="ChangeActiveWindow('chat')">
+                    <button class="BtnGrey" onclick="ChangeActiveWindow('chat')">
                         <i class="material-icons">chat</i>
                     </button>
-                    <button onclick="ChangeActiveWindow('rooms')">
+                    <button class="BtnGrey" onclick="ChangeActiveWindow('rooms')">
                         <i class="material-icons">diversity_3</i>
                     </button>
-                    <button onclick="ChangeActiveWindow('settings')">
+                    <button class="BtnGrey" onclick="ChangeActiveWindow('settings')">
                         <i class="material-icons">settings</i>
                     </button>
                 </div>
@@ -29,7 +29,7 @@
 
                     <div id="chatDiv" class="ChatDiv Hidden">
                         <div id="chatList" class="ChatList">
-                            <div class="ChatSectionHeader">
+                            <div class="ChatSectionHeader HeaderMargin">
                                 <span>Dine chatrum</span>
                             </div>
                         </div>
@@ -46,7 +46,7 @@
                             </div>
                         </div>
                         <div id="chatMembersList" class="ChatMembersList">
-                            <div class="ChatSectionHeader">
+                            <div class="ChatSectionHeader HeaderMarginExtra">
                                 <span>Medlemmer</span>
                             </div>
                         </div>
@@ -98,8 +98,15 @@
                         </div>
                         
                         <div class="DiscoveryPreGrid LightText">
-                            <label for="discoveryShowMember">Vis tilhørte rum? </label>
-                            <input id="discoveryShowMember" type="checkbox" onchange="ToggleFilterMemberRooms()" switch>
+                            <div class="DiscoveryPreGridDiv">
+                                <label for="discoveryShowMember">Vis tilhørte rum?</label>
+                                <input id="discoveryShowMember" type="checkbox" onchange="ToggleFilterMemberRooms()" switch>
+                            </div>
+                            <div class="DiscoveryPreGridDiv">
+                                <label for="discoveryFilterInput">Filtrér rum:</label>
+                                <input id="discoveryFilterInput" type="text">
+                                <button id="discoveryFilterBtn" class="BtnGrey" onclick="ApplyDiscoveryFilter()">Brug</button>
+                            </div>
                         </div>
                         <div id="discoveryGrid" class="DiscoveryGrid"></div>
                     </div>
@@ -123,8 +130,29 @@
                                         <input id="displayNameInput" type="text">
                                     </div>
                                     <div class="SettingsUserFieldInputButtons">
-                                        <button class="SettingsApplyButton BtnCancel" onclick="ToggleSettingsInput('displayname')">Annullér</button>
-                                        <button class="SettingsApplyButton BtnConfirm" onclick="TryChangeUserInfo()">Opdater</button>
+                                        <button class="SettingsApplyButton BtnGrey" onclick="ToggleSettingsInput('displayname')">Annullér</button>
+                                        <button class="SettingsApplyButton BtnConfirm" onclick="TryChangeDisplayName()">Opdater</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="SettingsUserField">
+                                <div class="SettingsUserFieldCover">
+                                    <div class="SettingsUserFieldLeft">
+                                        <p class="SettingsFieldCoverHeader">Profilbillede</p>
+                                    </div>
+                                    <div class="SettingsUserFieldRight">
+                                        <button class="SettingsButton" onclick="ToggleSettingsInput('picture')">Ændr</button>
+                                    </div>
+                                </div>
+                                <div id="settingsPictureInput" class="SettingsUserFieldInput Hidden">
+                                    <div class="SettingsUserFieldInputContent">
+                                        <label for="pictureInput">Nyt profilbillede:</label>
+                                        <input id="pictureInput" type="file" accept=".jpg,.jpeg,.png">
+                                    </div>
+                                    <div class="SettingsUserFieldInputButtons">
+                                        <button class="SettingsApplyButton BtnGrey" onclick="ToggleSettingsInput('picture')">Annullér</button>
+                                        <button class="SettingsApplyButton BtnConfirm" onclick="TryChangeProfilePicture()">Opdater</button>
                                     </div>
                                 </div>
                             </div>
@@ -145,8 +173,8 @@
                                         <input id="usernameInput" type="text">
                                     </div>
                                     <div class="SettingsUserFieldInputButtons">
-                                        <button class="SettingsApplyButton BtnCancel" onclick="ToggleSettingsInput('username')">Annullér</button>
-                                        <button class="SettingsApplyButton BtnConfirm">Opdater</button>
+                                        <button class="SettingsApplyButton BtnGrey" onclick="ToggleSettingsInput('username')">Annullér</button>
+                                        <button class="SettingsApplyButton BtnConfirm" onclick="TryChangeUserInfo('username')">Opdater</button>
                                     </div>
                                 </div>
                             </div>
@@ -169,13 +197,38 @@
                                         <input id="newPasswordInput" type="password">
                                     </div>
                                     <div class="SettingsUserFieldInputButtons">
-                                        <button class="SettingsApplyButton BtnCancel" onclick="ToggleSettingsInput('password')">Annullér</button>
-                                        <button class="SettingsApplyButton BtnConfirm">Opdater</button>
+                                        <button class="SettingsApplyButton BtnGrey" onclick="ToggleSettingsInput('password')">Annullér</button>
+                                        <button class="SettingsApplyButton BtnConfirm" onclick="TryChangeUserInfo('password')">Opdater</button>
                                     </div>
                                 </div>
                             </div>
+
+                            <div class="SettingsEndButtonContainer">
+                                <button class="SettingsEndButton BtnGrey" onclick="TryLogOut()">Log ud</button>
+                                <button class="SettingsEndButton BtnWarn" onclick="TryDeleteUser()">Slet bruger</button>
+                            </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+        <div id="userMiniBio" class="MiniBio Hidden">
+            <div class="MiniBioContent">
+                <div class="PHCircle"></div>
+                <div class="MiniBioNames LightText">
+                    <p id="miniBioDN"></p>
+                    <p id="miniBioUN"></p>
+                </div>
+                <div id="miniBioDivider" class="MiniBioDivider"></div>
+                <div id="miniBioButtonsList" class="MiniBioButtons"></div>
+            </div>
+        </div>
+        <div id="chatroomContextMenu" class="ChatroomContextMenu Hidden">
+            <div class="ChatroomContextMenuContent">
+                <span id="chatroomContextMenuName" class="LightText"></span>
+                <div class="ChatroomContextMenuButtonList">
+                    <button id="chatroomContextMenuCopyIDButton" class="BtnGrey">Kopier chatrum ID</button>
+                    <button id="chatroomContextMenuContextButton" class="BtnWarn"></button>
                 </div>
             </div>
         </div>

@@ -2,6 +2,7 @@
 
 import express from "express";
 import { createServer } from "node:http";
+import { Buffer } from "node:buffer";
 import { Server } from "socket.io";
 import { serialize, parse } from "cookie";
 import cookieParser from "cookie-parser";
@@ -70,7 +71,7 @@ app.post("/login/creds", async (req, res) => {
 app.post("/login/refresh", async (req, res) => {
     const response = await OnClientTryLoginRefresh(req);
     const json = await response.json();
-    console.log(json);
+    //console.log(json);
 
     if (response.ok) {
         res.cookie("access_token", json.access_token, { httpOnly: true });
@@ -122,8 +123,12 @@ io.on("connection", (socket) => {
         callback(await OnSocketClientLogOut(socket));
     });
 
-    socket.on("changeDisplayName", async (newName) => {
-        callback(await ChangeUserInfo(socket, newName));
+    socket.on("changeDisplayName", async (newName, callback) => {
+        callback(await ChangeUserDisplayName(socket, newName));
+    });
+
+    socket.on("changeProfilePicture", async (newPictureBuffer, fileType, callback) => {
+        callback(await ChangeUserProfilePicture(socket, newPictureBuffer, fileType));
     });
 
     // App
@@ -143,6 +148,10 @@ io.on("connection", (socket) => {
         callback(await OnSocketGetOwnInfo(socket));
     });
 
+    socket.on("deleteUser", async (callback) => {
+        callback(await DeleteUser(socket));
+    });
+
     socket.on("tryJoinRoom", (userID, roomID, password) => {
         OnSocketTryJoinChatroom(socket, userID, roomID, password);
     });
@@ -157,6 +166,14 @@ io.on("connection", (socket) => {
 
     socket.on("chatMessageRoom", (userID, roomID, message) => {
         OnSocketSendMessage(socket, userID, roomID, message);
+    });
+
+    socket.on("leaveChatroom", async (userID, roomID, callback) => {
+        callback(await OnSocketLeaveChatroom(socket, userID, roomID));
+    });
+
+    socket.on("deleteChatroom", async (userID, roomID, callback) => {
+        callback(await OnSocketDeleteChatroom(socket, userID, roomID));
     });
 
     socket.on("deleteMessage", (roomID, messageID) => {
@@ -227,13 +244,16 @@ async function OnClientTryLoginRefresh(req) {
 
 // Ikke færdig
 async function OnSocketClientLogOut(socket) {
+    const cookies = parse(socket.handshake.headers.cookie);
+
     const requestOptions = {
         method: "POST",
         headers: {
-            "Content-type": "application/json"
+            "Content-type": "application/json",
+            "Authorization": "Bearer " + cookies.access_token
         },
         body: JSON.stringify({
-            refresh_token: ""
+            refresh_token: cookies.refresh_token
         })
     };
 
@@ -243,12 +263,25 @@ async function OnSocketClientLogOut(socket) {
         const response = await fetch(String(process.env.API_URL) + "/auth/logout", requestOptions);
         const json = await response.json();
 
+        console.log(response);
+        console.log(json);
+
         callback.status = response.ok ? "OK" : "NOK";
+
+        if (response.ok) {
+            callback.payload = json;
+            socket.emit("goToLogin");
+        }
+        else {
+            callback.payload = {};
+            callback.payload.message = response.status;
+        }
     }
     catch (error) {
         console.error(error.message);
         callback.status = "NOK";
-        callback.payload.message = "Unknown error";
+        callback.payload = {};
+        callback.payload.message = "Serverfejl, prøv igen senere";
     }
 
     return callback;
@@ -289,12 +322,20 @@ async function OnSocketTryRegister(socket, username, displayname, password) {
 
 // Den første handling, en bruger foretager sig. Hvis de ikke er logget ind, sendes de til loginsiden. Hvis de er, får de noget offentlig data om sig selv, som de gemmer på
 async function OnSocketGetOwnInfo(socket) {
+    let cookies;
+
     if (!socket.handshake.headers.cookie) {
         socket.emit("goToLogin");
         return;
     }
 
-    const cookies = parse(socket.handshake.headers.cookie);
+    try {
+        cookies = parse(socket.handshake.headers.cookie);
+    }
+    catch (error) {
+        socket.emit("goToLogin");
+        return;
+    }
 
     const requestOptions = {
         method: "GET",
@@ -332,17 +373,8 @@ async function OnSocketGetOwnInfo(socket) {
     return callback;
 }
 
-
-async function ChangeUserInfo(req) {
-    const reqJSON = req.body;
-    const cookies = req.cookies;
-
-    /*
-    console.log("Username: " + reqJSON.username);
-    console.log("Display Name: " + reqJSON.display_name);
-    console.log("Current Password: " + reqJSON.current_password);
-    console.log("New Password: " + reqJSON.new_password);
-    */
+async function ChangeUserDisplayName(socket, newName) {
+    const cookies = parse(socket.handshake.headers.cookie);
 
     const requestOptions = {
         method: "PATCH",
@@ -351,10 +383,89 @@ async function ChangeUserInfo(req) {
             "Authorization": "Bearer " + cookies.access_token
         },
         body: JSON.stringify({
-            //username: reqJSON.username,
-            display_name: reqJSON.display_name,
-            //current_password: reqJSON.current_password,
-            //new_password: reqJSON.new_password
+            display_name: newName
+        })
+    };
+
+    let callback = Object.create(null);
+
+    try {
+        const response = await fetch(String(process.env.API_URL) + "/auth/updateDisplay", requestOptions);
+
+        callback.status = response.ok ? "OK" : "NOK";
+    }
+    catch (error) {
+        console.error(error);
+        callback.status = "NOK";
+    }
+
+    return callback;
+}
+
+async function ChangeUserProfilePicture(socket, newPictureBuffer, fileType) {
+    const cookies = parse(socket.handshake.headers.cookie);
+
+    let fileTypeString;
+    if (fileType === "image/png") {
+        fileTypeString = ".png";
+    }
+    else if (fileType === "image/jpeg") {
+        fileTypeString = ".jpg";
+    }
+    else {
+        return;
+    }
+
+    const newFileName = socket.userID + "_pfp" + fileTypeString;
+
+    const file = new File([
+        new Blob([newPictureBuffer])], 
+        newFileName, 
+        {
+            type: fileType
+        }
+    );
+    
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const requestOptions = {
+        method: "POST",
+        headers: {
+            "Authorization": "Bearer " + cookies.access_token
+        },
+        body: formData
+    };
+
+    let callback = Object.create(null);
+
+    try {
+        const response = await fetch(String(process.env.API_URL) + "/auth/upload-profile-picture", requestOptions);
+
+        callback.status = response.ok ? "OK" : "NOK";
+    }
+    catch (error) {
+        console.error(error);
+        callback.status = "NOK";
+    }
+
+    return callback;
+}
+
+async function ChangeUserInfo(req) {
+    const reqJSON = req.body;
+    const cookies = req.cookies;
+
+    const requestOptions = {
+        method: "PATCH",
+        headers: {
+            "Content-type": "application/json",
+            "Authorization": "Bearer " + cookies.access_token
+        },
+        body: JSON.stringify({
+            username: reqJSON.username,
+            current_password: reqJSON.current_password,
+            new_password: reqJSON.new_password
         })
     };
 
@@ -367,12 +478,46 @@ async function ChangeUserInfo(req) {
     }
 }
 
+async function DeleteUser(socket) {
+    const cookies = parse(socket.handshake.headers.cookie);
+
+    const requestOptions = {
+        method: "DELETE",
+        headers: {
+            "Authorization": "Bearer " + cookies.access_token
+        }
+    };
+
+    let callback = Object.create(null);
+
+    try {
+        const response = await fetch(String(process.env.API_URL) + "/auth/users/me", requestOptions);
+        console.log(response);
+
+        callback.status = response.ok ? "OK" : "NOK";
+    }
+    catch (error) {
+        console.error(error);
+        callback.status = "NOK";
+    }
+
+    return callback;
+}
+
 
 // ========== Chatroom ==========
 
 // Når en bruger åbner chatvinduet. Sender en liste med de chatrum, brugeren er medlem af
 async function SendRoomListToSocket(socket) {
-    const cookies = parse(socket.handshake.headers.cookie);
+    let cookies;
+
+    try {
+        cookies = parse(socket.handshake.headers.cookie);
+    }
+    catch (error) {
+        socket.emit("goToLogin");
+        return;
+    }
 
     const requestOptions = {
         method: "GET",
@@ -493,6 +638,108 @@ async function OnSocketKickUser(socket, roomID, userID) {
     }
 }
 
+async function OnSocketLeaveChatroom(socket, userID, roomID) {
+    const cookies = parse(socket.handshake.headers.cookie);
+
+    const requestOptions = {
+        method: "POST",
+        headers: {
+            "Authorization": "Bearer " + cookies.access_token
+        }
+    };
+
+    let callback = Object.create(null);
+
+    try {
+        const response = await fetch(String(process.env.API_URL) + "/rooms/" + roomID + "/leave", requestOptions);
+        const json = await response.json();
+
+        callback.status = response.ok ? "OK" : "NOK";
+        callback.payload = json;
+
+        if (response.ok) {
+            const sockets = await io.fetchSockets();
+            const leavingSocket = sockets.find(s => s.userID === userID);
+
+            if (leavingSocket !== undefined) {
+                if (leavingSocket.activeRoomID === roomID) {
+                    leavingSocket.leave(String(roomID));
+                    leavingSocket.activeRoomID = -1;
+                }
+
+                leavingSocket.emit("kickedFromRoom", roomID);
+            }
+
+            io.to(String(roomID)).emit("userLeft", userID);
+        }
+    }
+    catch (error) {
+        console.error(error);
+        callback.status = "NOK";
+        callback.payload = {};
+        callback.payload.detail = "Serverfejl";
+    }
+
+    return callback;
+}
+
+async function OnSocketDeleteChatroom(socket, userID, roomID) {
+    const cookies = parse(socket.handshake.headers.cookie);
+
+    const requestOptions = {
+        method: "DELETE",
+        headers: {
+            "Authorization": "Bearer " + cookies.access_token
+        }
+    };
+
+    let callback = Object.create(null);
+
+    try {
+        const response = await fetch(String(process.env.API_URL) + "/rooms/" + roomID, requestOptions);
+
+        console.log(response);
+
+        const json = await response.json();
+
+        callback.status = response.ok ? "OK" : "NOK";
+        callback.payload = json;
+
+        if (response.ok) {
+            const sockets = await io.fetchSockets();
+            const leavingSocket = sockets.find(s => s.userID === userID);
+
+            if (leavingSocket !== undefined) {
+                if (leavingSocket.activeRoomID === roomID) {
+                    leavingSocket.leave(String(roomID));
+                    leavingSocket.activeRoomID = -1;
+                }
+
+                leavingSocket.emit("kickedFromRoom", roomID);
+            }
+
+            const socketsInRoom = await io.in(String(roomID)).fetchSockets();
+
+            for (let i = 0; i < socketsInRoom.length; i++) {
+                const socket = socketsInRoom[i];
+                
+                socket.leave(String(roomID));
+                socket.activeRoomID = -1;
+                socket.emit("kickedFromRoom", roomID);
+            }
+        }
+    }
+    catch (error) {
+        console.error(error);
+        callback.status = "NOK";
+        callback.payload = {};
+        callback.payload.detail = "Serverfejl";
+    }
+
+    return callback;
+}
+
+
 
 // ========== Discovery ==========
 
@@ -599,7 +846,19 @@ async function OnSocketDeleteMessage(socket, roomID, messageID) {
         if (response.ok) {
             const json = await response.json();
 
-            io.to(String(roomID)).emit("messageDeleted", messageID, "[deleted by user]");
+            let reasoning;
+
+            if (json.type === "user") {
+                reasoning = "[deleted by user]";
+            }
+            else if (json.type === "admin") {
+                reasoning = "[deleted by admin]";
+            }
+            else {
+                reasoning = "[deleted]";
+            }
+
+            io.to(String(roomID)).emit("messageDeleted", messageID, reasoning);
         }
     }
     catch (error) {
